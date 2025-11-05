@@ -2,6 +2,16 @@ from sqlalchemy import Column, ForeignKey, Integer, String, DateTime, func
 from sqlalchemy.orm import relationship
 from database import Base
 
+class User(Base):
+    __tablename__ = "users"
+
+    id = Column(Integer, primary_key=True, index=True)
+    username = Column(String, unique=True, index=True)
+    email = Column(String, unique=True, index=True)
+    avatar_url = Column(String, nullable=True)
+    
+    messages = relationship("Message", back_populates="owner")
+    comments = relationship("Comment", back_populates="owner")
 
 class Message(Base):
     __tablename__ = "messages"
@@ -14,17 +24,6 @@ class Message(Base):
     owner = relationship("User", back_populates="messages")
 
     comments = relationship("Comment", back_populates="message", cascade="all, delete-orphan")
-
-class User(Base):
-    __tablename__ = "users"
-
-    id = Column(Integer, primary_key=True, index=True)
-    username = Column(String, unique=True, index=True)
-    email = Column(String, unique=True, index=True)
-    avatar_url = Column(String, nullable=True)
-    
-    messages = relationship("Message", back_populates="owner")
-    comments = relationship("Comment", back_populates="owner")
 
 class Comment(Base):
     __tablename__ = "comments"
