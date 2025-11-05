@@ -1,18 +1,54 @@
 from pydantic import BaseModel
-from typing import Optional
+from datetime import datetime
+from typing import Optional, List
 
-# Модель для даних, які ми отримуємо від клієнта (без ID)
-class ItemBase(BaseModel):
-    name: str
-    price: float
-    description: Optional[str] = None
+# --- Base schemas, which contain common fields ---
 
-class ItemCreate(ItemBase):
-    pass
+class UserBase(BaseModel):
+    username: str
+    email: str
+    avatar_url: Optional[str] = None
 
-# Модель для даних, які ми повертаємо клієнту (з ID)
-class Item(ItemBase):
+class CommentBase(BaseModel):
+    text: str
+
+class MessageBase(BaseModel):
+    text: str
+
+# --- Create schemas, used for creating new records ---
+
+class UserCreate(UserBase):
+    pass   # for creating a new user, all fields are inherited from UserBase
+
+class CommentCreate(CommentBase):
+    pass   # owner_id and message_id will be provided separately
+
+class MessageCreate(MessageBase):
+    pass   # owner_id will be provided separately
+
+# --- Schema for user included in other schemas ---
+
+class User(UserBase):
     id: int
+
+    class Config:
+        orm_mode = True
+
+# --- Schema for comment ---
+
+class Comment(CommentBase):
+    id: int
+    timestamp: datetime
+    owner: User   # Nested user schema
+
+    class Config:
+        orm_mode = True
+
+class Message(MessageBase):
+    id: int
+    timestamp: datetime
+    owner: User   # Nested user schema
+    comments: List[Comment] = []  # List of nested comments
 
     class Config:
         orm_mode = True
