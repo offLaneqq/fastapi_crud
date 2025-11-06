@@ -1,4 +1,4 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, EmailStr
 from datetime import datetime
 from typing import Optional, List
 
@@ -6,7 +6,7 @@ from typing import Optional, List
 
 class UserBase(BaseModel):
     username: str
-    email: str
+    email: EmailStr
     avatar_url: Optional[str] = None
 
 class CommentBase(BaseModel):
