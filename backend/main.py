@@ -31,6 +31,11 @@ def get_db():
     finally:
         db.close()
 
+# Start page
+@app.get("/")
+def read_root():
+    return {"message": "Welcome to the FastAPI CRUD application!"}
+
 # --- User endpoints ---
 
 # Endpoint to get a list of users
@@ -70,3 +75,27 @@ def update_message(message_id: int, new_text: str, db: Session = Depends(get_db)
     if db_message is None:
         raise HTTPException(status_code=404, detail="Message not found")
     return db_message
+
+# --- Comment endpoints ---
+
+# Endpoint to get a list of comments
+@app.get("/comments/", response_model=List[schemas.Comment])
+def get_comments(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
+    comments = crud.get_comments(db, skip=skip, limit=limit)
+    return comments
+
+# Endpoint to create a new comment
+@app.post("/messages/{message_id}/comments/", response_model=schemas.Comment, status_code=status.HTTP_201_CREATED)
+def create_comment(
+    message_id: int,  # Get message ID from the URL path
+    comment: schemas.CommentCreate,  # Get comment body (text)
+    owner_id: int,  # TEMPORARY: while there is no authentication, we pass manually
+    db: Session = Depends(get_db)
+):
+    # Check if the message exists
+    db_message = crud.get_message(db, message_id)
+    if not db_message:
+        raise HTTPException(status_code=404, detail="Message not found")
+    
+    return crud.create_comment(db=db, comment=comment, owner_id=owner_id, message_id=message_id)
+
