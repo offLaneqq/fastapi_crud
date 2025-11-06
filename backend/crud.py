@@ -29,6 +29,10 @@ def create_user(db: Session, user: schemas.UserCreate):
 
 # --- Messages CRUD operations ---
 
+def get_message(db: Session, message_id: int):
+    # Get a message by ID
+    return db.query(models.Message).filter(models.Message.id == message_id).first()
+
 def get_messages(db: Session, skip: int = 0, limit: int = 100):
     # Get list of messages with information about their owners and comments
     return db.query(models.Message).options(
