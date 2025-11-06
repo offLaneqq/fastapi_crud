@@ -1,16 +1,23 @@
-# React + Vite
+## Frontend (React)
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+### Implemented features
 
-Currently, two official plugins are available:
+-   Displaying a list of messages (threads) with authors and comments.
+-   Form for creating a new message.
+-   Ability to delete messages.
+-   Stylized interface resembling a chat application.
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+### Future features (development plan)
 
-## React Compiler
-
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
-
-## Expanding the ESLint configuration
-
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+-   **Authentication:** Creation of pages for user registration and login.
+-   **Routing:** Use of `react-router-dom` to create separate pages:
+-   Main feed.
+    - User profile page.
+- Separate thread page with all comments.
+- **State management:** Implementing Context API or Zustand to store information about the current user.
+- **Interface:**
+- Displaying user avatars.
+    - Date and time formatting (e.g., “5 minutes ago”).
+- Ability to add comments directly below the thread.
+- “Like” buttons.
+- **Real-time:** Connect to WebSocket for instant feed updates without reloading the page.
