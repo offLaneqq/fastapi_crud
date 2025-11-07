@@ -76,6 +76,14 @@ def update_message(message_id: int, new_text: str, db: Session = Depends(get_db)
         raise HTTPException(status_code=404, detail="Message not found")
     return db_message
 
+@app.delete("/messages/{message_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_message(message_id: int, db: Session = Depends(get_db)):
+    db_message = crud.get_message(db, message_id)
+    if db_message is None:
+        raise HTTPException(status_code=404, detail="Message not found")
+    crud.delete_message(db, message_id)
+    return
+
 # --- Comment endpoints ---
 
 # Endpoint to get a list of comments
