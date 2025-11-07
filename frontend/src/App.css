@@ -1,124 +1,380 @@
-/* Основний контейнер додатку */
 .App {
-  display: flex;
-  flex-direction: column; /* Розташовуємо елементи вертикально: заголовок зверху, контейнер знизу */
-  gap: 1.5rem; /* Простір між заголовком та контейнером з колонками */
-  
-  width: 90vw; 
-  height: 85vh;
-  
-  max-width: 1400px;
-  max-height: 900px;
-
-  background-color: #1a1717;
-  padding: 2rem;
-  border-radius: 12px;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+  min-height: 100vh;
+  width: 100%;
+  padding: 0;
+  background-color: #0a0a0a;
 }
 
 /* Заголовок */
 h1 {
-  text-align: center;
-  color: #4d5668;
-  margin: 0; /* Прибираємо стандартні відступи */
-  flex-shrink: 0; /* Забороняємо заголовку стискатися */
-}
-
-/* Контейнер для двох колонок */
-.container {
-  display: flex;
-  gap: 2rem; /* Простір між формою та списком */
   width: 100%;
-  height: 100%;
-  overflow: hidden; /* Ховаємо все, що не вміщується */
+  text-align: center;
+  color: #e4e6eb;
+  margin: 0;
+  padding: 1.5rem 0;
+  font-size: 1.8rem;
+  font-weight: 700;
+  border-bottom: 1px solid #2d2d2d;
+  background-color: #0a0a0a;
+  position: sticky;
+  top: 0;
+  z-index: 100;
 }
 
-/* Стилі для форми (ліва колонка) */
-.item-form {
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
-  width: 320px;
-  flex-shrink: 0;
-  border: none;
+/* Центральна колонка контенту - ФІКСОВАНА ШИРИНА */
+.content-column {
+  width: 100%;
+  max-width: 600px;
+  margin: 0 auto;
   padding: 0;
 }
 
-.item-form input {
-  padding: 0.85rem;
-  border: 1px solid #cbd5e0;
-  border-radius: 6px;
-  font-size: 1rem;
+/* Форма створення повідомлення */
+.message-form {
+  background-color: #1a1a1a;
+  border-bottom: 1px solid #2d2d2d;
+  padding: 1.5rem;
+  margin: 0;
 }
 
-.item-form input:focus {
-  outline: none;
-  border-color: #4299e1;
-  box-shadow: 0 0 0 2px rgba(66, 153, 225, 0.5);
-}
-
-.item-form button {
-  padding: 0.85rem 1.5rem;
+.message-form textarea {
+  width: 100%;
+  min-height: 60px;
+  max-height: 200px;
+  background-color: transparent;
   border: none;
-  border-radius: 6px;
-  background-color: #3182ce;
-  color: white;
+  padding: 0;
+  color: #e4e6eb;
   font-size: 1rem;
-  font-weight: bold;
+  resize: none;
+  font-family: inherit;
+  line-height: 1.5;
+  overflow-y: auto;
+}
+
+.message-form textarea::placeholder {
+  color: #737373;
+}
+
+.message-form textarea:focus {
+  outline: none;
+}
+
+/* Контейнер для кнопки Post */
+.form-actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 1rem;
+}
+
+.message-form button {
+  padding: 0.65rem 1.5rem;
+  background-color: #0095f6;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  font-weight: 600;
   cursor: pointer;
   transition: background-color 0.2s;
-  margin-top: auto; /* Притискає кнопку до низу колонки */
 }
 
-.item-form button:hover {
-  background-color: #2b6cb0;
+.message-form button:hover:not(:disabled) {
+  background-color: #0081d6;
 }
 
-/* Стилі для списку (права колонка) */
-.item-list {
+.message-form button:disabled {
+  background-color: #1a4d7a;
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+/* Список повідомлень */
+.message-list {
   list-style: none;
   padding: 0;
   margin: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
-  flex-grow: 1;
-  overflow-y: auto; /* Внутрішня прокрутка для списку */
-  padding-right: 1rem;
 }
 
-.item-list li {
+/* Картка повідомлення */
+.message-card {
+  background-color: #1a1a1a;
+  border-bottom: 1px solid #2d2d2d;
+  padding: 1.25rem 1.5rem;
+  transition: background-color 0.15s;
+  position: relative;
+}
+
+.message-card:hover {
+  background-color: #1f1f1f;
+}
+
+/* Заголовок повідомлення */
+.message-header {
   display: flex;
-  justify-content: space-between;
   align-items: center;
-  padding: 1rem;
-  background-color: #f7fafc;
-  border: 1px solid #e2e8f0;
-  border-radius: 6px;
+  gap: 0.75rem;
+  margin-bottom: 0.5rem;
+  position: relative;
+}
+
+.avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  object-fit: cover;
   flex-shrink: 0;
 }
 
-.item-list li div {
-  color: #2d3748; /* Робимо текст трохи темнішим для кращої читабельності */
+.user-info {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
 }
 
-.item-list li div p {
-  margin: 0.25rem 0 0;
-  color: #718096;
-  font-size: 0.9rem;
+.user-info strong {
+  color: #e4e6eb;
+  font-size: 0.95rem;
+  font-weight: 600;
 }
 
-.delete-btn {
-  padding: 0.5rem 1rem;
+.timestamp {
+  color: #737373;
+  font-size: 0.85rem;
+  margin-top: 0.1rem;
+}
+
+/* Меню з трьома крапками */
+.message-menu {
+  position: relative;
+  margin-left: auto;
+}
+
+.menu-btn {
+  background: none;
   border: none;
-  border-radius: 6px;
-  background-color: #e53e3e;
-  color: white;
-  font-size: 0.9rem;
+  color: #737373;
   cursor: pointer;
+  padding: 0.5rem;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+}
+
+.menu-btn:hover {
+  background-color: rgba(255, 255, 255, 0.1);
+  color: #e4e6eb;
+}
+
+.menu-btn svg {
+  width: 20px;
+  height: 20px;
+}
+
+/* Випадаюче меню */
+.dropdown-menu {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  background-color: #262626;
+  border: 1px solid #2d2d2d;
+  border-radius: 12px;
+  min-width: 150px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+  z-index: 10;
+  overflow: hidden;
+}
+
+.dropdown-menu button {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem 1rem;
+  background: none;
+  border: none;
+  color: #ff4444;
+  cursor: pointer;
+  font-size: 0.9rem;
+  text-align: left;
   transition: background-color 0.2s;
 }
 
-.delete-btn:hover {
-  background-color: #c53030;
+.dropdown-menu button:hover {
+  background-color: rgba(255, 68, 68, 0.1);
+}
+
+.dropdown-menu button svg {
+  width: 18px;
+  height: 18px;
+}
+
+/* Текст повідомлення */
+.message-text {
+  color: #e4e6eb;
+  line-height: 1.5;
+  margin-bottom: 0.75rem;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+}
+
+/* Футер повідомлення з діями */
+.message-actions {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+  padding-top: 0.25rem;
+}
+
+.action-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  background: none;
+  border: none;
+  color: #737373;
+  cursor: pointer;
+  font-size: 0.85rem;
+  padding: 0.4rem 0.6rem;
+  border-radius: 6px;
+  transition: all 0.2s;
+  font-weight: 400;
+}
+
+.action-btn:hover {
+  color: #e4e6eb;
+  background-color: rgba(255, 255, 255, 0.05);
+}
+
+.action-btn svg {
+  width: 18px;
+  height: 18px;
+}
+
+.action-btn span {
+  min-width: 16px;
+  text-align: center;
+}
+
+/* Розділ коментарів */
+.comments-section {
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid #2d2d2d;
+}
+
+.comments-section h3 {
+  color: #e4e6eb;
+  margin-bottom: 1rem;
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+/* Коментар */
+.comment {
+  display: flex;
+  gap: 0.75rem;
+  padding: 0.75rem 0;
+  border-bottom: 1px solid #2d2d2d;
+}
+
+.comment:last-child {
+  border-bottom: none;
+}
+
+.avatar-small {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  object-fit: cover;
+  flex-shrink: 0;
+}
+
+.comment-content {
+  flex: 1;
+}
+
+.comment-content strong {
+  color: #e4e6eb;
+  font-size: 0.9rem;
+  font-weight: 600;
+  margin-right: 0.5rem;
+}
+
+.comment-content .timestamp {
+  display: inline;
+  margin-left: 0.5rem;
+}
+
+.comment-content p {
+  color: #e4e6eb;
+  line-height: 1.4;
+  margin-top: 0.35rem;
+  word-wrap: break-word;
+}
+
+/* Форма додавання коментаря */
+.add-comment {
+  display: flex;
+  gap: 0.75rem;
+  margin-top: 1rem;
+}
+
+.add-comment input {
+  flex: 1;
+  background-color: #0a0a0a;
+  border: 1px solid #2d2d2d;
+  border-radius: 20px;
+  padding: 0.65rem 1rem;
+  color: #e4e6eb;
+  font-size: 0.9rem;
+}
+
+.add-comment input::placeholder {
+  color: #737373;
+}
+
+.add-comment input:focus {
+  outline: none;
+  border-color: #0095f6;
+}
+
+.add-comment button {
+  padding: 0.65rem 1.25rem;
+  background-color: #0095f6;
+  color: white;
+  border: none;
+  border-radius: 20px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.2s;
+  flex-shrink: 0;
+}
+
+.add-comment button:hover:not(:disabled) {
+  background-color: #0081d6;
+}
+
+.add-comment button:disabled {
+  background-color: #1a4d7a;
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .content-column {
+    max-width: 100%;
+  }
+
+  h1 {
+    font-size: 1.5rem;
+  }
+
+  .message-card {
+    padding: 1rem;
+  }
 }

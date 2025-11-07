@@ -1,68 +1,312 @@
-:root {
-  font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
-  line-height: 1.5;
-  font-weight: 400;
-
-  color-scheme: light dark;
-  color: rgba(255, 255, 255, 0.87);
-  background-color: #242424;
-
-  font-synthesis: none;
-  text-rendering: optimizeLegibility;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-}
-
-a {
-  font-weight: 500;
-  color: #646cff;
-  text-decoration: inherit;
-}
-a:hover {
-  color: #535bf2;
+/* Глобальні стилі */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
 }
 
 body {
-  margin: 0;
-  display: flex;
-  place-items: center;
-  min-width: 320px;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
+    sans-serif;
+  background-color: #0a0a0a;
+  color: #e4e6eb;
+}
+
+.App {
   min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 1rem;
 }
 
+/* Заголовок */
 h1 {
-  font-size: 3.2em;
-  line-height: 1.1;
+  text-align: center;
+  color: #e4e6eb;
+  margin: 1.5rem 0;
+  font-size: 2rem;
+  font-weight: 600;
 }
 
-button {
-  border-radius: 8px;
-  border: 1px solid transparent;
-  padding: 0.6em 1.2em;
-  font-size: 1em;
-  font-weight: 500;
-  font-family: inherit;
+/* Центральна колонка контенту */
+.content-column {
+  width: 100%;
+  max-width: 680px; /* 60% для великих екранів */
+  margin: 0 auto;
+}
+
+/* Форма створення повідомлення */
+.message-form {
   background-color: #1a1a1a;
-  cursor: pointer;
-  transition: border-color 0.25s;
-}
-button:hover {
-  border-color: #646cff;
-}
-button:focus,
-button:focus-visible {
-  outline: 4px auto -webkit-focus-ring-color;
+  border: 1px solid #2d2d2d;
+  border-top-left-radius: 16px;
+  border-top-right-radius: 16px;
+  padding: 1.5rem;
+  margin-bottom: 1.5rem;
 }
 
-@media (prefers-color-scheme: light) {
-  :root {
-    color: #213547;
-    background-color: #ffffff;
+.message-form textarea {
+  width: 100%;
+  min-height: 100px;
+  background-color: #0a0a0a;
+  border: 1px solid #2d2d2d;
+  border-radius: 12px;
+  padding: 1rem;
+  color: #e4e6eb;
+  font-size: 1rem;
+  resize: vertical;
+  font-family: inherit;
+}
+
+.message-form textarea:focus {
+  outline: none;
+  border-color: #4a9eff;
+}
+
+.message-form button {
+  margin-top: 1rem;
+  padding: 0.75rem 2rem;
+  background-color: #4a9eff;
+  color: white;
+  border: none;
+  border-radius: 24px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.message-form button:hover {
+  background-color: #3a8eef;
+}
+
+/* Список повідомлень */
+.message-list {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+/* Картка повідомлення */
+.message-card {
+  background-color: #1a1a1a;
+  border-bottom: 1px solid #2d2d2d;
+  padding: 1.5rem;
+  transition: background-color 0.2s;
+  cursor: pointer;
+}
+
+.message-card:hover {
+  background-color: #222;
+}
+
+.message-card:last-child {
+  border-bottom-left-radius: 16px;
+  border-bottom-right-radius: 16px;
+  border-bottom: none;
+}
+
+/* Заголовок повідомлення */
+.message-header {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 0.75rem;
+}
+
+.avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.user-info {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.user-info > div {
+  display: flex;
+  flex-direction: column;
+}
+
+.user-info strong {
+  color: #e4e6eb;
+  font-size: 0.95rem;
+}
+
+.timestamp {
+  color: #8e8e8e;
+  font-size: 0.85rem;
+  margin-top: 0.1rem;
+}
+
+/* Текст повідомлення */
+.message-text {
+  color: #e4e6eb;
+  line-height: 1.5;
+  margin-bottom: 1rem;
+  white-space: pre-wrap;
+}
+
+/* Футер повідомлення з діями */
+.message-actions {
+  display: flex;
+  gap: 1.5rem;
+  align-items: center;
+  padding-top: 0.5rem;
+}
+
+.action-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: none;
+  border: none;
+  color: #8e8e8e;
+  cursor: pointer;
+  font-size: 0.9rem;
+  padding: 0.5rem;
+  border-radius: 8px;
+  transition: all 0.2s;
+}
+
+.action-btn:hover {
+  color: #4a9eff;
+  background-color: rgba(74, 158, 255, 0.1);
+}
+
+.action-btn svg {
+  width: 20px;
+  height: 20px;
+}
+
+/* Сторінка окремого треду */
+.thread-page {
+  width: 100%;
+  max-width: 680px;
+  margin: 0 auto;
+}
+
+.back-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: none;
+  border: none;
+  color: #4a9eff;
+  cursor: pointer;
+  font-size: 1rem;
+  padding: 0.5rem 0;
+  margin-bottom: 1rem;
+}
+
+.back-btn:hover {
+  text-decoration: underline;
+}
+
+/* Розділ коментарів */
+.comments-section {
+  margin-top: 1.5rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid #2d2d2d;
+}
+
+.comments-section h3 {
+  color: #e4e6eb;
+  margin-bottom: 1rem;
+  font-size: 1.1rem;
+}
+
+/* Коментар */
+.comment {
+  display: flex;
+  gap: 0.75rem;
+  padding: 1rem 0;
+  border-bottom: 1px solid #2d2d2d;
+}
+
+.comment:last-child {
+  border-bottom: none;
+}
+
+.avatar-small {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  object-fit: cover;
+  flex-shrink: 0;
+}
+
+.comment-content {
+  flex: 1;
+}
+
+.comment-content strong {
+  color: #e4e6eb;
+  font-size: 0.9rem;
+  margin-right: 0.5rem;
+}
+
+.comment-content p {
+  color: #e4e6eb;
+  line-height: 1.4;
+  margin-top: 0.25rem;
+}
+
+/* Форма додавання коментаря */
+.add-comment {
+  display: flex;
+  gap: 0.75rem;
+  margin-top: 1.5rem;
+  padding: 1rem;
+  background-color: #0a0a0a;
+  border-radius: 12px;
+}
+
+.add-comment input {
+  flex: 1;
+  background-color: transparent;
+  border: 1px solid #2d2d2d;
+  border-radius: 20px;
+  padding: 0.75rem 1rem;
+  color: #e4e6eb;
+  font-size: 0.95rem;
+}
+
+.add-comment input:focus {
+  outline: none;
+  border-color: #4a9eff;
+}
+
+.add-comment button {
+  padding: 0.75rem 1.5rem;
+  background-color: #4a9eff;
+  color: white;
+  border: none;
+  border-radius: 20px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.add-comment button:hover {
+  background-color: #3a8eef;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .content-column, .thread-page {
+    max-width: 100%;
   }
-  a:hover {
-    color: #747bff;
-  }
-  button {
-    background-color: #f9f9f9;
+  
+  h1 {
+    font-size: 1.5rem;
   }
 }
