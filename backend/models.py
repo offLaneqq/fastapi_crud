@@ -1,4 +1,5 @@
-from sqlalchemy import Column, ForeignKey, Integer, String, DateTime, func
+from datetime import datetime, timezone
+from sqlalchemy import Column, ForeignKey, Integer, String, DateTime
 from sqlalchemy.orm import relationship
 from database import Base
 
@@ -10,15 +11,15 @@ class User(Base):
     email = Column(String, unique=True, index=True)
     avatar_url = Column(String, nullable=True)
     
-    messages = relationship("Message", back_populates="owner")
-    comments = relationship("Comment", back_populates="owner")
+    messages = relationship("Message", back_populates="owner", cascade="all, delete-orphan")
+    comments = relationship("Comment", back_populates="owner", cascade="all, delete-orphan")
 
 class Message(Base):
     __tablename__ = "messages"
 
     id = Column(Integer, primary_key=True, index=True)
     text = Column(String, index=True)
-    timestamp = Column(DateTime(timezone=True), server_default=func.now())
+    timestamp = Column(DateTime, default=lambda: datetime.now(timezone.utc))
 
     owner_id = Column(Integer, ForeignKey("users.id"))
     owner = relationship("User", back_populates="messages")
@@ -30,7 +31,7 @@ class Comment(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     text = Column(String, index=True)
-    timestamp = Column(DateTime(timezone=True), server_default=func.now())
+    timestamp = Column(DateTime, default=lambda: datetime.now(timezone.utc))
 
     owner_id = Column(Integer, ForeignKey("users.id"))
     owner = relationship("User", back_populates="comments")
