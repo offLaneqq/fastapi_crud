@@ -58,6 +58,14 @@ def update_message(db: Session, message_id: int, new_text: str):
         db.refresh(db_message)
     return db_message
 
+def delete_message(db: Session, message_id: int):
+    # Delete a message by ID
+    db_message = db.query(models.Message).filter(models.Message.id == message_id).first()
+    if db_message:
+        db.delete(db_message)
+        db.commit()
+    return
+
 # --- Comments CRUD operations ---
 
 def get_comments(db: Session, skip: int = 0, limit: int = 100):
