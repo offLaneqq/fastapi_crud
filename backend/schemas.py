@@ -1,13 +1,17 @@
-from pydantic import BaseModel, EmailStr
+from pydantic import BaseModel, EmailStr, Field
 from datetime import datetime
 from typing import Optional, List
-
+    
 # --- Base schemas, which contain common fields ---
 
 class UserBase(BaseModel):
     username: str
     email: EmailStr
-    avatar_url: Optional[str] = None
+    avatar_url: Optional[str] = Field(
+        default=None, 
+        examples=[None],
+        description="URL of the user's avatar image"
+    )
 
 class CommentBase(BaseModel):
     text: str
