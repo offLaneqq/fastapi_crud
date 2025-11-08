@@ -55,55 +55,113 @@ def create_user(user: schemas.UserCreate, db: Session = Depends(get_db)):
         raise HTTPException(status_code=400, detail="Email already registered")
     return crud.create_user(db, user)
 
-# --- Message endpoints ---
+# --- Post endpoints ---
 
-# Endpoint to get a list of messages with their owners and comments
-@app.get("/messages/", response_model=List[schemas.Message])
-def get_messages(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
-    messages = crud.get_messages(db, skip=skip, limit=limit)
-    return messages
+# Endpoint to get a list of posts with their owners and comments
+@app.get("/posts/", response_model=List[schemas.Post])
+def get_posts(skip: int = 0, limit: int = 100, current_user: int = 1, db: Session = Depends(get_db)):
+    posts = crud.get_posts(db, skip=skip, limit=limit)
+    
+    result = []
+    for post in posts:
+        post_dict = {
+            "id": post.id,
+            "text": post.text,
+            "timestamp": post.timestamp,
+            "owner": post.owner,
+            "replies": [
+                schemas.PostReply(
+                    id=reply.id,
+                    text=reply.text,
+                    timestamp=reply.timestamp,
+                    owner=reply.owner,
+                    likes_count=len(reply.likes),
+                    is_liked_by_user=any(like.user_id == current_user for like in reply.likes)
+                ) for reply in post.replies
+            ],
+            "likes_count": len(post.likes),
+            "is_liked_by_user": any(like.user_id == current_user for like in post.likes)
+        }
+        result.append(post_dict)
 
-# Endpoint to create a new message
-@app.post("/messages/", response_model=schemas.Message, status_code=status.HTTP_201_CREATED)
-def create_message(message: schemas.MessageCreate, owner_id: int, db: Session = Depends(get_db)):
-    return crud.create_message(db, message, owner_id)
+    return result
 
-# Endpoint to update an existing message
-@app.put("/messages/{message_id}", response_model=schemas.Message)
-def update_message(message_id: int, new_text: str, db: Session = Depends(get_db)):
-    db_message = crud.update_message(db, message_id, new_text)
-    if db_message is None:
-        raise HTTPException(status_code=404, detail="Message not found")
-    return db_message
+# Endpoint to get a specific post by ID
+@app.get("/posts/{post_id}", response_model=schemas.Post)
+def get_post(post_id: int, current_user: int = 1, db: Session = Depends(get_db)):
+    post = crud.get_post(db, post_id)
+    if post is None:
+        raise HTTPException(status_code=404, detail="Post not found")
+    return {
+        "id": post.id,
+        "text": post.text,
+        "timestamp": post.timestamp,
+        "owner": post.owner,
+        "replies": [
+            schemas.PostReply(
+                id=reply.id,
+                text=reply.text,
+                timestamp=reply.timestamp,
+                owner=reply.owner,
+                likes_count=len(reply.likes),
+                is_liked_by_user=any(like.user_id == current_user for like in reply.likes)
+            ) for reply in post.replies
+        ],
+        "likes_count": len(post.likes),
+        "is_liked_by_user": any(like.user_id == current_user for like in post.likes)
+    }
 
-@app.delete("/messages/{message_id}", status_code=status.HTTP_204_NO_CONTENT)
-def delete_message(message_id: int, db: Session = Depends(get_db)):
-    db_message = crud.get_message(db, message_id)
-    if db_message is None:
-        raise HTTPException(status_code=404, detail="Message not found")
-    crud.delete_message(db, message_id)
+# Endpoint to create a new post
+@app.post("/posts/", response_model=schemas.Post, status_code=status.HTTP_201_CREATED)
+def create_post(post: schemas.PostCreate, owner_id: int, db: Session = Depends(get_db)):
+    return crud.create_post(db, post, owner_id, parent_id=None)
+
+# Endpoint to create a reply to a post
+@app.post("/posts/{post_id}/replies", response_model=schemas.Post, status_code=status.HTTP_201_CREATED)
+def create_reply(post_id: int, reply: schemas.PostCreate, current_user: int = 1, db: Session = Depends(get_db)):
+    
+    # Check if the parent post exists
+    parent_post = crud.get_post(db, post_id)
+    if not parent_post:
+        raise HTTPException(status_code=404, detail="Parent post not found")
+    
+    return crud.create_post(db, reply, owner_id=current_user, parent_id=post_id)
+
+# Endpoint to update an existing post
+@app.put("/posts/{post_id}", response_model=schemas.Post)
+def update_post(post_id: int, new_text: str, db: Session = Depends(get_db)):
+    db_post = crud.update_post(db, post_id, new_text)
+    if db_post is None:
+        raise HTTPException(status_code=404, detail="Post not found")
+    return db_post
+
+@app.delete("/posts/{post_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_post(post_id: int, db: Session = Depends(get_db)):
+    db_post = crud.get_post(db, post_id)
+    if db_post is None:
+        raise HTTPException(status_code=404, detail="Post not found")
+    crud.delete_post(db, post_id)
     return
 
-# --- Comment endpoints ---
+# --- Like endpoints ---
 
-# Endpoint to get a list of comments
-@app.get("/comments/", response_model=List[schemas.Comment])
-def get_comments(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
-    comments = crud.get_comments(db, skip=skip, limit=limit)
-    return comments
-
-# Endpoint to create a new comment
-@app.post("/messages/{message_id}/comments/", response_model=schemas.Comment, status_code=status.HTTP_201_CREATED)
-def create_comment(
-    message_id: int,  # Get message ID from the URL path
-    comment: schemas.CommentCreate,  # Get comment body (text)
-    owner_id: int,  # TEMPORARY: while there is no authentication, we pass manually
-    db: Session = Depends(get_db)
-):
-    # Check if the message exists
-    db_message = crud.get_message(db, message_id)
-    if not db_message:
-        raise HTTPException(status_code=404, detail="Message not found")
+@app.post("/posts/{post_id}/like", status_code=status.HTTP_200_OK)
+def toggle_like(post_id: int, current_user: int = 1, db: Session = Depends(get_db)):
+    db_post = crud.get_post(db, post_id)
+    if db_post is None:
+        raise HTTPException(status_code=404, detail="Post not found")
     
-    return crud.create_comment(db=db, comment=comment, owner_id=owner_id, message_id=message_id)
+    # Toggle like
+    is_liked = crud.toggle_like(db, current_user, post_id)
+    liked_count = len(db_post.likes)
 
+    return {"is_liked": is_liked, "likes_count": liked_count}
+
+# Get list of likes for a post
+@app.get("/posts/{post_id}/likes", status_code=status.HTTP_200_OK)
+def get_likes_count(post_id: int, db: Session = Depends(get_db)):
+    db_post = crud.get_post(db, post_id)
+    if db_post is None:
+        raise HTTPException(status_code=404, detail="Post not found")
+    
+    return db_post.likes
