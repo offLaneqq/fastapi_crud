@@ -5,8 +5,8 @@ const API_URL = "http://localhost:8000";
 
 function App() {
   // States for messages and form inputs
-  const [messages, setMessages] = useState([]);
-  const [messageText, setMessageText] = useState("");
+  const [posts, setPosts] = useState([]);
+  const [postText, setPostText] = useState("");
   const [currentUserId, setCurrentUserId] = useState(1);
 
   // States for comments
@@ -17,40 +17,40 @@ function App() {
   const [showMenu, setShowMenu] = useState({});
 
   useEffect(() => {
-    fetchMessages();
+    fetchPosts();
   }, []);
 
-  const fetchMessages = async () => {
+  const fetchPosts = async () => {
     try {
-      const response = await fetch(`${API_URL}/messages/`);
+      const response = await fetch(`${API_URL}/posts/`);
       if (!response.ok) throw new Error('Network response was not ok');
       const data = await response.json();
-      setMessages(data);
+      setPosts(data);
     } catch (error) {
-      console.error("Error fetching messages:", error);
+      console.error("Error fetching posts:", error);
     }
   };
 
-  // Create new message
-  const handleSubmitMessage = async (e) => {
+  // Create new post
+  const handleSubmitPost = async (e) => {
     e.preventDefault();
-    if (!messageText.trim()) return;
+    if (!postText.trim()) return;
 
     try {
-      const response = await fetch(`${API_URL}/messages/?owner_id=${currentUserId}`, {
+      const response = await fetch(`${API_URL}/posts/?owner_id=${currentUserId}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ text: messageText }),
+        body: JSON.stringify({ text: postText }),
       });
 
       if (response.ok) {
-        setMessageText("");
-        fetchMessages();
+        setPostText("");
+        fetchPosts();
       } else {
-        console.error("Error to create message:", response.statusText);
+        console.error("Error creating post:", response.statusText);
       }
     } catch (error) {
-      console.error("Error creating message:", error);
+      console.error("Error creating post:", error);
     }
   };
 
@@ -58,64 +58,74 @@ function App() {
   const handleTextareaKeyDown = (e) => {
     if (e.key === 'Enter' && e.ctrlKey) {
       e.preventDefault();
-      handleSubmitMessage(e);
+      handleSubmitPost(e);
     }
   };
 
-  const handleSubmitComment = async (e, messageId) => {
+  const handleSubmitComment = async (e, postId) => {
     e.preventDefault();
 
-    const currentCommentText = commentText[messageId];
+    const currentCommentText = commentText[postId];
     if (!currentCommentText || !currentCommentText.trim()) return;
 
     try {
-      const response = await fetch(`${API_URL}/messages/${messageId}/comments/?owner_id=${currentUserId}`, {
+      const response = await fetch(`${API_URL}/posts/${postId}/replies?owner_id=${currentUserId}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ text: currentCommentText }),
       });
 
       if (response.ok) {
-        setCommentText(prev => ({ ...prev, [messageId]: "" }));
-        fetchMessages();
+        setCommentText(prev => ({ ...prev, [postId]: "" }));
+        fetchPosts();
       } else {
-        console.error("Error to create comment:", response.statusText);
+        console.error("Error creating comment:", response.statusText);
       }
     } catch (error) {
       console.error("Error creating comment:", error);
     }
   };
 
-  const toggleCommentsVisibility = (messageId) => {
-    setShowComments(prev => ({
-      ...prev,
-      [messageId]: !prev[messageId]
-    }));
+  const toggleCommentsVisibility = (postId) => {
+    setShowComments(prev => ({ ...prev, [postId]: !prev[postId] }));
   };
 
-  const toggleMenu = (messageId) => {
-    setShowMenu(prev => ({
-      ...prev,
-      [messageId]: !prev[messageId]
-    }));
+  const toggleMenu = (postId) => {
+    setShowMenu(prev => ({ ...prev, [postId]: !prev[postId] }));
   };
 
-  const handleDeleteMessage = async (messageId) => {
-    if (!confirm("Are you sure you want to delete this message?")) return;
+  const handleDeletePost = async (postId) => {
+    if (!confirm("Are you sure you want to delete this post?")) return;
 
     try {
-      const response = await fetch(`${API_URL}/messages/${messageId}`, {
+      const response = await fetch(`${API_URL}/posts/${postId}`, {
         method: "DELETE",
       });
 
-      if (response.ok) {
-        fetchMessages();
-        setShowMenu(prev => ({ ...prev, [messageId]: false }));
+      if (response.ok || response.status === 204) {
+        fetchPosts();
+        setShowMenu(prev => ({ ...prev, [postId]: false }));
       } else {
-        console.error("Error deleting message:", response.statusText);
+        console.error("Error deleting post:", response.statusText);
       }
     } catch (error) {
-      console.error("Error deleting message:", error);
+      console.error("Error deleting post:", error);
+    }
+  };
+
+  const handleToggleLike = async (postId) => {
+    try {
+      const response = await fetch(`${API_URL}/posts/${postId}/like?user_id=${currentUserId}`, {
+        method: "POST",
+      });
+
+      if (response.ok) {
+        fetchPosts();
+      } else {
+        console.error("Error toggling like:", response.statusText);
+      }
+    } catch (error) {
+      console.error("Error toggling like:", error);
     }
   };
 
@@ -146,46 +156,46 @@ function App() {
       <h1>Threads</h1>
 
       <div className="content-column">
-        <form onSubmit={handleSubmitMessage} className="message-form">
+        <form onSubmit={handleSubmitPost} className="message-form">
           <textarea
-            value={messageText}
-            onChange={(e) => setMessageText(e.target.value)}
+            value={postText}
+            onChange={(e) => setPostText(e.target.value)}
             onKeyDown={handleTextareaKeyDown}
             placeholder="What's on your mind?"
             rows="3"
           />
           <div className="form-actions">
-            <button type="submit" disabled={!messageText.trim()}>
+            <button type="submit" disabled={!postText.trim()}>
               Post
             </button>
           </div>
         </form>
 
         <ul className="message-list">
-          {messages.map((message) => (
-            <li key={message.id} className="message-card">
+          {posts.map((post) => (
+            <li key={post.id} className="message-card">
               <div className="message-header">
                 <img
-                  src={message.owner.avatar_url || `https://ui-avatars.com/api/?name=${message.owner.username}&background=random`}
-                  alt={`avatar for ${message.owner.username}`}
+                  src={post.owner.avatar_url || `https://ui-avatars.com/api/?name=${post.owner.username}&background=random`}
+                  alt={`avatar for ${post.owner.username}`}
                   className="avatar"
                 />
                 <div className="user-info">
-                  <strong>{message.owner.username}</strong>
-                  <span className="timestamp">{formatDate(message.timestamp)}</span>
+                  <strong>{post.owner.username}</strong>
+                  <span className="timestamp">{formatDate(post.timestamp)}</span>
                 </div>
 
                 {/* Menu with three dots */}
                 <div className="message-menu">
-                  <button className="menu-btn" onClick={() => toggleMenu(message.id)}>
+                  <button className="menu-btn" onClick={() => toggleMenu(post.id)}>
                     <svg viewBox="0 0 24 24" fill="currentColor">
                       <path d="M12 8c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm0 2c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm0 6c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z" />
                     </svg>
                   </button>
 
-                  {showMenu[message.id] && (
+                  {showMenu[post.id] && (
                     <div className="dropdown-menu">
-                      <button onClick={() => handleDeleteMessage(message.id)}>
+                      <button onClick={() => handleDeletePost(post.id)}>
                         <svg viewBox="0 0 24 24" fill="currentColor">
                           <path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z" />
                         </svg>
@@ -196,43 +206,59 @@ function App() {
                 </div>
               </div>
 
-              <p className="message-text">{message.text}</p>
+              <p className="message-text">{post.text}</p>
 
               <div className="message-actions">
                 {/* Button for likes */}
-                <button className="action-btn">
-                  <svg viewBox="0 0 24 24" fill="currentColor">
+                <button 
+                  className={`action-btn ${post.is_liked_by_user ? 'liked' : ''}`}
+                  onClick={() => handleToggleLike(post.id)}
+                >
+                  <svg viewBox="0 0 24 24" fill={post.is_liked_by_user ? "currentColor" : "none"} stroke="currentColor" strokeWidth="2">
                     <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" />
                   </svg>
-                  <span>0</span>
+                  <span>{post.likes_count}</span>
                 </button>
 
                 {/* Button for comments */}
                 <button
                   className="action-btn"
-                  onClick={() => toggleCommentsVisibility(message.id)}
+                  onClick={() => toggleCommentsVisibility(post.id)}
                 >
                   <svg viewBox="0 0 24 24" fill="currentColor">
                     <path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2z" />
                   </svg>
-                  <span>{message.comments.length}</span>
+                  <span>{post.replies?.length || 0}</span>
                 </button>
               </div>
 
-              {showComments[message.id] && (
+              {showComments[post.id] && (
                 <div className="comments-section">
                   <h3>Comments</h3>
-                  {message.comments.map((comment) => (
-                    <div key={comment.id} className="comment">
+                  {post.replies?.map((reply) => (
+                    <div key={reply.id} className="comment">
                       <img
-                        src={comment.owner.avatar_url || `https://ui-avatars.com/api/?name=${comment.owner.username}&background=random`}
-                        alt={`avatar for ${comment.owner.username}`}
+                        src={reply.owner.avatar_url || `https://ui-avatars.com/api/?name=${reply.owner.username}&background=random`}
+                        alt={`avatar for ${reply.owner.username}`}
                         className="avatar-small"
                       />
                       <div className="comment-content">
-                        <strong>{comment.owner.username}</strong>
-                        <span className="timestamp">{formatDate(comment.timestamp)}</span>
-                        <p>{comment.text}</p>
+                        <div className="comment-header">
+                          <strong>{reply.owner.username}</strong>
+                          <span className="timestamp">{formatDate(reply.timestamp)}</span>
+                        </div>
+                        <p>{reply.text}</p>
+                        <div className="comment-actions">
+                          <button 
+                            className={`comment-like-btn ${reply.is_liked_by_user ? 'liked' : ''}`}
+                            onClick={() => handleToggleLike(reply.id)}
+                          >
+                            <svg viewBox="0 0 24 24" fill={reply.is_liked_by_user ? "currentColor" : "none"} stroke="currentColor" strokeWidth="2">
+                              <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" />
+                            </svg>
+                            {reply.likes_count > 0 && <span>{reply.likes_count}</span>}
+                          </button>
+                        </div>
                       </div>
                     </div>
                   ))}
@@ -240,18 +266,18 @@ function App() {
                   <div className="add-comment">
                     <input
                       type="text"
-                      value={commentText[message.id] || ""}
-                      onChange={(e) => setCommentText(prev => ({ ...prev, [message.id]: e.target.value }))}
+                      value={commentText[post.id] || ""}
+                      onChange={(e) => setCommentText(prev => ({ ...prev, [post.id]: e.target.value }))}
                       placeholder="Write a comment..."
                       onKeyPress={(e) => {
                         if (e.key === 'Enter') {
-                          handleSubmitComment(e, message.id);
+                          handleSubmitComment(e, post.id);
                         }
                       }}
                     />
                     <button
-                      onClick={(e) => handleSubmitComment(e, message.id)}
-                      disabled={!commentText[message.id]?.trim()}
+                      onClick={(e) => handleSubmitComment(e, post.id)}
+                      disabled={!commentText[post.id]?.trim()}
                     >
                       Post
                     </button>
