@@ -1,8 +1,8 @@
 from pydantic import BaseModel, EmailStr, Field
 from datetime import datetime
 from typing import Optional, List
-    
-# --- Base schemas, which contain common fields ---
+
+# --- User schemas ---
 
 class UserBase(BaseModel):
     username: str
@@ -13,46 +13,57 @@ class UserBase(BaseModel):
         description="URL of the user's avatar image"
     )
 
-class CommentBase(BaseModel):
-    text: str
-
-class MessageBase(BaseModel):
-    text: str
-
-# --- Create schemas, used for creating new records ---
-
 class UserCreate(UserBase):
     pass   # for creating a new user, all fields are inherited from UserBase
-
-class CommentCreate(CommentBase):
-    pass   # owner_id and message_id will be provided separately
-
-class MessageCreate(MessageBase):
-    pass   # owner_id will be provided separately
-
-# --- Schema for user included in other schemas ---
 
 class User(UserBase):
     id: int
 
     class Config:
-        orm_mode = True
+        from_attributes = True
 
-# --- Schema for comment ---
+# --- Post schemas ---
 
-class Comment(CommentBase):
+class PostBase(BaseModel):
+    text: str
+
+class PostCreate(PostBase):
+    pass   # owner_id will be provided separately
+
+class PostReply(PostBase):
+    id: int
+    timestamp: datetime
+    owner: User 
+    likes_count: int = 0  
+    is_liked_by_user: bool = False  
+
+    class Config:
+        from_attributes = True
+
+class Post(PostBase):
     id: int
     timestamp: datetime
     owner: User   # Nested user schema
+    replies: List[PostReply] = []  # List of replies to this post
+    likes_count: int = 0  # Number of likes for the post
+    is_liked_by_user: bool = False  # Whether the current user liked this post
 
     class Config:
-        orm_mode = True
+        from_attributes = True
 
-class Message(MessageBase):
+# --- Like schemas ---
+
+class LikeBase(BaseModel):
+    pass  # No additional fields needed for base
+
+class LikeCreate(LikeBase):
+    pass  # No additional fields needed for creation
+
+class Like(LikeBase):
     id: int
+    user_id: int
+    post_id: int
     timestamp: datetime
-    owner: User   # Nested user schema
-    comments: List[Comment] = []  # List of nested comments
 
     class Config:
-        orm_mode = True
+        from_attributes = True
