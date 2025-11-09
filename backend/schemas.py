@@ -14,13 +14,26 @@ class UserBase(BaseModel):
     )
 
 class UserCreate(UserBase):
-    pass   # for creating a new user, all fields are inherited from UserBase
+    password: str = Field(
+        min_length=8,
+        examples=["strongpassword123"],
+        description="Password for the user account"
+    )   # for creating a new user, all fields are inherited from UserBase
 
 class User(UserBase):
     id: int
 
     class Config:
         from_attributes = True
+
+# --- Token schemas ---
+
+class Token(BaseModel):
+    access_token: str
+    token_type: str
+
+class TokenData(BaseModel):
+    username: Optional[str] = None
 
 # --- Post schemas ---
 
