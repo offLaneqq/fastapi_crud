@@ -1,7 +1,17 @@
+from datetime import timedelta
 from fastapi import FastAPI, Depends, HTTPException, status
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
-from typing import List
+from typing import List, Optional
+from fastapi.security import OAuth2PasswordRequestForm
+from dependencies import get_db
+from auth import (
+    get_current_active_user,
+    get_current_user,
+    get_current_user_optional,
+    create_access_token,
+    ACCESS_TOKEN_EXPIRE_MINUTES
+)
 
 import crud, models, schemas
 from database import SessionLocal, engine
@@ -23,18 +33,45 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Dependency to get a DB session
-def get_db():
-    db = SessionLocal()
-    try:
-        yield db
-    finally:
-        db.close()
-
 # Start page
 @app.get("/")
 def read_root():
     return {"message": "Welcome to the FastAPI CRUD application!"}
+
+# --- Authentication endpoints ---
+
+# Create new user (registration)
+@app.post("/auth/register", response_model=schemas.User)
+def register(user: schemas.UserCreate, db: Session = Depends(get_db)):
+    db_user_by_name = crud.get_user_by_name(db, user.username)
+    if db_user_by_name:
+        raise HTTPException(status_code=400, detail="Username already registered")
+    
+    db_user_by_email = crud.get_user_by_email(db, user.email)
+    if db_user_by_email:
+        raise HTTPException(status_code=400, detail="Email already registered")
+
+    return crud.create_user(db, user)
+
+# User login to get access token
+@app.post("/auth/login", response_model=schemas.Token)
+def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)):
+    user = crud.authenticate_user(db, form_data.username, form_data.password)
+    if not user:
+        raise HTTPException(status_code=400, detail="Invalid username or password")
+    access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+    access_token = create_access_token(
+        data={"sub": user.username},
+        expires_delta=access_token_expires
+    )
+    return {"access_token": access_token, "token_type": "bearer"}
+
+# Get info about the current user
+@app.get("/auth/me", response_model=schemas.User)
+def read_users_me(current_user: schemas.User = Depends(get_current_active_user)):
+    if current_user is None:
+        raise HTTPException(status_code=401, detail="Not authenticated")
+    return current_user
 
 # --- User endpoints ---
 
@@ -59,9 +96,10 @@ def create_user(user: schemas.UserCreate, db: Session = Depends(get_db)):
 
 # Endpoint to get a list of posts with their owners and comments
 @app.get("/posts/", response_model=List[schemas.Post])
-def get_posts(skip: int = 0, limit: int = 100, current_user: int = 1, db: Session = Depends(get_db)):
+def get_posts(skip: int = 0, limit: int = 100, current_user: Optional[models.User] = Depends(get_current_user_optional), db: Session = Depends(get_db)):
     posts = crud.get_posts(db, skip=skip, limit=limit)
-    
+    current_user_id: Optional[int] = getattr(current_user, 'id', None) if current_user is not None else None
+
     result = []
     for post in posts:
         post_dict = {
@@ -76,11 +114,11 @@ def get_posts(skip: int = 0, limit: int = 100, current_user: int = 1, db: Sessio
                     timestamp=reply.timestamp,
                     owner=reply.owner,
                     likes_count=len(reply.likes),
-                    is_liked_by_user=any(like.user_id == current_user for like in reply.likes)
+                    is_liked_by_user=any(like.user_id == current_user_id for like in reply.likes) if current_user_id is not None else False
                 ) for reply in post.replies
             ],
             "likes_count": len(post.likes),
-            "is_liked_by_user": any(like.user_id == current_user for like in post.likes)
+            "is_liked_by_user": any(like.user_id == current_user_id for like in post.likes) if current_user_id is not None else False
         }
         result.append(post_dict)
 
@@ -88,7 +126,7 @@ def get_posts(skip: int = 0, limit: int = 100, current_user: int = 1, db: Sessio
 
 # Endpoint to get a specific post by ID
 @app.get("/posts/{post_id}", response_model=schemas.Post)
-def get_post(post_id: int, current_user: int = 1, db: Session = Depends(get_db)):
+def get_post(post_id: int, current_user: Optional[models.User] = Depends(get_current_user_optional), db: Session = Depends(get_db)):
     post = crud.get_post(db, post_id)
     if post is None:
         raise HTTPException(status_code=404, detail="Post not found")
@@ -104,55 +142,64 @@ def get_post(post_id: int, current_user: int = 1, db: Session = Depends(get_db))
                 timestamp=reply.timestamp,
                 owner=reply.owner,
                 likes_count=len(reply.likes),
-                is_liked_by_user=any(like.user_id == current_user for like in reply.likes)
+                is_liked_by_user=any(like.user_id == current_user.id for like in reply.likes) if current_user else False
             ) for reply in post.replies
         ],
         "likes_count": len(post.likes),
-        "is_liked_by_user": any(like.user_id == current_user for like in post.likes)
+        "is_liked_by_user": any(like.user_id == current_user.id for like in post.likes) if current_user else False
     }
 
 # Endpoint to create a new post
 @app.post("/posts/", response_model=schemas.Post, status_code=status.HTTP_201_CREATED)
-def create_post(post: schemas.PostCreate, owner_id: int, db: Session = Depends(get_db)):
-    return crud.create_post(db, post, owner_id, parent_id=None)
+def create_post(post: schemas.PostCreate, current_user: schemas.User = Depends(get_current_user), db: Session = Depends(get_db)):
+    return crud.create_post(db, post, owner_id=current_user.id, parent_id=None)
 
 # Endpoint to create a reply to a post
 @app.post("/posts/{post_id}/replies", response_model=schemas.Post, status_code=status.HTTP_201_CREATED)
-def create_reply(post_id: int, reply: schemas.PostCreate, current_user: int = 1, db: Session = Depends(get_db)):
+def create_reply(post_id: int, reply: schemas.PostCreate, current_user: schemas.User = Depends(get_current_user), db: Session = Depends(get_db)):
     
     # Check if the parent post exists
     parent_post = crud.get_post(db, post_id)
     if not parent_post:
         raise HTTPException(status_code=404, detail="Parent post not found")
-    
-    return crud.create_post(db, reply, owner_id=current_user, parent_id=post_id)
+
+    return crud.create_post(db, reply, owner_id=current_user.id, parent_id=post_id)
 
 # Endpoint to update an existing post
 @app.put("/posts/{post_id}", response_model=schemas.Post)
-def update_post(post_id: int, new_text: str, db: Session = Depends(get_db)):
-    db_post = crud.update_post(db, post_id, new_text)
-    if db_post is None:
-        raise HTTPException(status_code=404, detail="Post not found")
-    return db_post
-
-@app.delete("/posts/{post_id}", status_code=status.HTTP_204_NO_CONTENT)
-def delete_post(post_id: int, db: Session = Depends(get_db)):
+def update_post(post_id: int, new_text: str, db: Session = Depends(get_db), current_user: schemas.User = Depends(get_current_user)):
     db_post = crud.get_post(db, post_id)
     if db_post is None:
         raise HTTPException(status_code=404, detail="Post not found")
+    
+    if getattr(db_post, 'owner_id') != getattr(current_user, 'id'):
+        raise HTTPException(status_code=403, detail="Not authorized to update this post")
+
+    return crud.update_post(db, post_id, new_text)
+
+
+@app.delete("/posts/{post_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_post(post_id: int, db: Session = Depends(get_db), current_user: schemas.User = Depends(get_current_user)):
+    db_post = crud.get_post(db, post_id)
+
+    if db_post is None:
+        raise HTTPException(status_code=404, detail="Post not found")
+    
+    if getattr(db_post, 'owner_id') != getattr(current_user, 'id'):
+        raise HTTPException(status_code=403, detail="Not authorized to delete this post")
     crud.delete_post(db, post_id)
     return
 
 # --- Like endpoints ---
 
 @app.post("/posts/{post_id}/like", status_code=status.HTTP_200_OK)
-def toggle_like(post_id: int, current_user: int = 1, db: Session = Depends(get_db)):
+def toggle_like(post_id: int, current_user: schemas.User = Depends(get_current_user), db: Session = Depends(get_db)):
     db_post = crud.get_post(db, post_id)
     if db_post is None:
         raise HTTPException(status_code=404, detail="Post not found")
     
     # Toggle like
-    is_liked = crud.toggle_like(db, current_user, post_id)
+    is_liked = crud.toggle_like(db, current_user.id, post_id)
     liked_count = len(db_post.likes)
 
     return {"is_liked": is_liked, "likes_count": liked_count}
