@@ -1,4 +1,5 @@
 from sqlalchemy.orm import Session, joinedload
+from auth import verify_password, get_password_hash
 import schemas, models
 
 # --- Users CRUD operations ---
@@ -21,11 +22,21 @@ def get_users(db: Session, skip: int = 0, limit: int = 100):
 
 def create_user(db: Session, user: schemas.UserCreate):
     # Create a new user record
-    db_user = models.User(username=user.username, email=user.email, avatar_url=user.avatar_url)
+    hashed_password = get_password_hash(user.password)  # type: ignore
+    db_user = models.User(username=user.username, email=user.email, avatar_url=user.avatar_url, hashed_password=hashed_password)
     db.add(db_user)
     db.commit()
     db.refresh(db_user)
     return db_user
+
+def authenticate_user(db: Session, username: str, password: str):
+    # Authenticate user by username and password
+    user = get_user_by_name(db, username)
+    if user is None:
+        return False
+    if not verify_password(password, user.hashed_password):  # type: ignore
+        return False
+    return user
 
 # --- Posts CRUD operations ---
 
