@@ -35,13 +35,13 @@ def create_access_token(data: dict, expires_delta: Optional[timedelta] = None) -
 def _decode_token(credentials: HTTPAuthorizationCredentials, db: Session) -> Optional[models.User]:
     try:
         payload = jwt.decode(credentials.credentials, SECRET_KEY, algorithms=[ALGORITHM])
-        username: Optional[str] = payload.get("sub")
-        if username is None:
+        email: Optional[str] = payload.get("sub")
+        if email is None:
             return None
     except JWTError:
         return None
-    
-    return db.query(models.User).filter(models.User.username == username).first()
+
+    return db.query(models.User).filter(models.User.email == email).first()
 
 def get_current_user(
     credentials: HTTPAuthorizationCredentials = Depends(security_required),

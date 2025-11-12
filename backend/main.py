@@ -3,7 +3,6 @@ from fastapi import FastAPI, Depends, HTTPException, status
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
 from typing import List, Optional
-from fastapi.security import OAuth2PasswordRequestForm
 from dependencies import get_db
 from auth import (
     get_current_active_user,
@@ -55,20 +54,20 @@ def register(user: schemas.UserCreate, db: Session = Depends(get_db)):
 
 # User login to get access token
 @app.post("/auth/login", response_model=schemas.Token)
-def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)):
-    user = crud.authenticate_user(db, form_data.username, form_data.password)
+def login(form_data: schemas.LoginForm, db: Session = Depends(get_db)):
+    user = crud.authenticate_user(db, form_data.email, form_data.password)
     if not user:
-        raise HTTPException(status_code=400, detail="Invalid username or password")
+        raise HTTPException(status_code=400, detail="Invalid email or password")
     access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
     access_token = create_access_token(
-        data={"sub": user.username},
+        data={"sub": user.email},
         expires_delta=access_token_expires
     )
     return {"access_token": access_token, "token_type": "bearer"}
 
 # Get info about the current user
 @app.get("/auth/me", response_model=schemas.User)
-def read_users_me(current_user: schemas.User = Depends(get_current_active_user)):
+def read_users_me(current_user: models.User = Depends(get_current_active_user)):
     if current_user is None:
         raise HTTPException(status_code=401, detail="Not authenticated")
     return current_user
@@ -156,18 +155,18 @@ def create_post(post: schemas.PostCreate, current_user: schemas.User = Depends(g
 
 # Endpoint to create a reply to a post
 @app.post("/posts/{post_id}/replies", response_model=schemas.Post, status_code=status.HTTP_201_CREATED)
-def create_reply(post_id: int, reply: schemas.PostCreate, current_user: schemas.User = Depends(get_current_user), db: Session = Depends(get_db)):
+def create_reply(post_id: int, reply: schemas.PostCreate, current_user: models.User = Depends(get_current_user), db: Session = Depends(get_db)):
     
     # Check if the parent post exists
     parent_post = crud.get_post(db, post_id)
-    if not parent_post:
+    if parent_post is None:
         raise HTTPException(status_code=404, detail="Parent post not found")
 
-    return crud.create_post(db, reply, owner_id=current_user.id, parent_id=post_id)
+    return crud.create_post(db, reply, owner_id=current_user.id, parent_id=post_id) # type: ignore
 
 # Endpoint to update an existing post
 @app.put("/posts/{post_id}", response_model=schemas.Post)
-def update_post(post_id: int, new_text: str, db: Session = Depends(get_db), current_user: schemas.User = Depends(get_current_user)):
+def update_post(post_id: int, new_text: str, db: Session = Depends(get_db), current_user: models.User = Depends(get_current_user)):
     db_post = crud.get_post(db, post_id)
     if db_post is None:
         raise HTTPException(status_code=404, detail="Post not found")
@@ -179,7 +178,7 @@ def update_post(post_id: int, new_text: str, db: Session = Depends(get_db), curr
 
 
 @app.delete("/posts/{post_id}", status_code=status.HTTP_204_NO_CONTENT)
-def delete_post(post_id: int, db: Session = Depends(get_db), current_user: schemas.User = Depends(get_current_user)):
+def delete_post(post_id: int, db: Session = Depends(get_db), current_user: models.User = Depends(get_current_user)):
     db_post = crud.get_post(db, post_id)
 
     if db_post is None:
@@ -193,13 +192,13 @@ def delete_post(post_id: int, db: Session = Depends(get_db), current_user: schem
 # --- Like endpoints ---
 
 @app.post("/posts/{post_id}/like", status_code=status.HTTP_200_OK)
-def toggle_like(post_id: int, current_user: schemas.User = Depends(get_current_user), db: Session = Depends(get_db)):
+def toggle_like(post_id: int, current_user: models.User = Depends(get_current_user), db: Session = Depends(get_db)):
     db_post = crud.get_post(db, post_id)
     if db_post is None:
         raise HTTPException(status_code=404, detail="Post not found")
     
     # Toggle like
-    is_liked = crud.toggle_like(db, current_user.id, post_id)
+    is_liked = crud.toggle_like(db, current_user.id, post_id) # type: ignore
     liked_count = len(db_post.likes)
 
     return {"is_liked": is_liked, "likes_count": liked_count}

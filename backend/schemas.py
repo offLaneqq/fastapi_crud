@@ -80,3 +80,7 @@ class Like(LikeBase):
 
     class Config:
         from_attributes = True
+
+class LoginForm(BaseModel):
+    email: EmailStr
+    password: str
