@@ -7,22 +7,60 @@ function App() {
   // States for messages and form inputs
   const [posts, setPosts] = useState([]);
   const [postText, setPostText] = useState("");
+
+  // Auth states
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [currentUserId, setCurrentUserId] = useState(1);
+  const [showAuthModal, setShowAuthModal] = useState(false);
+  const [authMode, setAuthMode] = useState("login"); // "login" or "register"
+
+  // Auth form states
+  const [username, setUsername] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [authError, setAuthError] = useState("");
 
   // States for comments
   const [commentText, setCommentText] = useState({});
   const [showComments, setShowComments] = useState({});
-
-  // States for menu
   const [showMenu, setShowMenu] = useState({});
+  const [currentUsername, setCurrentUsername] = useState("");
+
 
   useEffect(() => {
+    const token = localStorage.getItem("token");
+    if (token) {
+      fetchCurrentUser(token);
+    }
     fetchPosts();
   }, []);
 
+  const fetchCurrentUser = async (token) => {
+    try {
+      const response = await fetch(`${API_URL}/auth/me`, {
+        headers: { "Authorization": `Bearer ${token}` },
+      });
+      if (response.ok) {
+        const user = await response.json();
+        setCurrentUserId(user.id);
+        setCurrentUsername(user.username);
+        setIsAuthenticated(true);
+      } else {
+        setIsAuthenticated(false);
+        localStorage.removeItem("token");
+      }
+    } catch (error) {
+      console.error("Error fetching current user:", error);
+      localStorage.removeItem("token");
+    }
+  };
+
   const fetchPosts = async () => {
     try {
-      const response = await fetch(`${API_URL}/posts/`);
+      const token = localStorage.getItem("token");
+      const headers = token ? { "Authorization": `Bearer ${token}` } : {};
+
+      const response = await fetch(`${API_URL}/posts/`, { headers });
       if (!response.ok) throw new Error('Network response was not ok');
       const data = await response.json();
       setPosts(data);
@@ -31,15 +69,115 @@ function App() {
     }
   };
 
+  const handleLogin = async (e) => {
+    e.preventDefault();
+    setAuthError("");
+
+    try {
+
+      const response = await fetch(`${API_URL}/auth/login`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password }),
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        localStorage.setItem("token", data.access_token);
+        await fetchCurrentUser(data.access_token);
+        setShowAuthModal(false);
+        setEmail("");
+        setPassword("");
+        fetchPosts();
+      } else {
+        const errorData = await response.json();
+        if (typeof errorData.detail === "string") {
+          setAuthError(errorData.detail);
+        } else {
+          setAuthError("Login failed");
+        }
+      }
+    } catch (error) {
+      console.error("Error during login:", error);
+      setAuthError("Network error. Please try again.");
+    }
+  };
+
+  const handleRegister = async (e) => {
+    e.preventDefault();
+    setAuthError("");
+
+    try {
+      const response = await fetch(`${API_URL}/auth/register`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ username, email, password }),
+      });
+
+      if (response.ok) {
+        const formData = new URLSearchParams();
+        formData.append("email", email);
+        formData.append("password", password);
+
+        const loginResponse = await fetch(`${API_URL}/auth/login`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email, password }),
+        });
+
+        if (loginResponse.ok) {
+          const data = await loginResponse.json();
+          localStorage.setItem("token", data.access_token);
+          await fetchCurrentUser(data.access_token);
+          setShowAuthModal(false);
+          setUsername("");
+          setEmail("");
+          setPassword("");
+          fetchPosts();
+        } else {
+          const error = await loginResponse.json();
+          if (typeof error.detail === "string") {
+            setAuthError(error.detail);
+          } else {
+            setAuthError("Login after registration failed");
+          }
+        }
+      } else {
+        const error = await response.json();
+        if (typeof error.detail === "string") {
+          setAuthError(error.detail);
+        } else {
+          setAuthError("Registration failed");
+        }
+      }
+    } catch (error) {
+      console.error("Error during registration:", error);
+      setAuthError("Network error. Please try again.");
+    }
+  };
+
+  const handleLogout = () => {
+    localStorage.removeItem("token");
+    setIsAuthenticated(false);
+    setCurrentUsername("");
+    setCurrentUserId(null);
+    fetchPosts();
+  }
+
   // Create new post
   const handleSubmitPost = async (e) => {
     e.preventDefault();
-    if (!postText.trim()) return;
+    if (!postText.trim() || !isAuthenticated) return;
+
+    const token = localStorage.getItem("token");
 
     try {
-      const response = await fetch(`${API_URL}/posts/?owner_id=${currentUserId}`, {
+      const response = await fetch(`${API_URL}/posts/`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`
+        },
         body: JSON.stringify({ text: postText }),
       });
 
@@ -56,7 +194,7 @@ function App() {
 
   // Handle Ctrl+Enter in textarea
   const handleTextareaKeyDown = (e) => {
-    if (e.key === 'Enter' && e.ctrlKey) {
+    if (e.key === 'Enter' && (e.ctrlKey || e.shiftKey)) {
       e.preventDefault();
       handleSubmitPost(e);
     }
@@ -65,13 +203,20 @@ function App() {
   const handleSubmitComment = async (e, postId) => {
     e.preventDefault();
 
+    if (!isAuthenticated) {
+      setShowAuthModal(true);
+      return;
+    }
+
     const currentCommentText = commentText[postId];
     if (!currentCommentText || !currentCommentText.trim()) return;
 
+    const token = localStorage.getItem("token");
+
     try {
-      const response = await fetch(`${API_URL}/posts/${postId}/replies?owner_id=${currentUserId}`, {
+      const response = await fetch(`${API_URL}/posts/${postId}/replies`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
         body: JSON.stringify({ text: currentCommentText }),
       });
 
@@ -97,9 +242,12 @@ function App() {
   const handleDeletePost = async (postId) => {
     if (!confirm("Are you sure you want to delete this post?")) return;
 
+    const token = localStorage.getItem("token");
+
     try {
       const response = await fetch(`${API_URL}/posts/${postId}`, {
         method: "DELETE",
+        headers: { "Authorization": `Bearer ${token}` },
       });
 
       if (response.ok || response.status === 204) {
@@ -114,9 +262,18 @@ function App() {
   };
 
   const handleToggleLike = async (postId) => {
+
+    if (!isAuthenticated) {
+      setShowAuthModal(true);
+      return;
+    }
+
+    const token = localStorage.getItem("token");
+
     try {
-      const response = await fetch(`${API_URL}/posts/${postId}/like?user_id=${currentUserId}`, {
+      const response = await fetch(`${API_URL}/posts/${postId}/like`, {
         method: "POST",
+        headers: { "Authorization": `Bearer ${token}` },
       });
 
       if (response.ok) {
@@ -153,23 +310,37 @@ function App() {
 
   return (
     <div className="App">
-      <h1>Threads</h1>
+      <header className="app-header">
+        <h1>Threads</h1>
+        {isAuthenticated ? (
+          <div className="user-section">
+            <span>Welcome, {currentUsername}!</span>
+            <button onClick={handleLogout} className="logout-btn">Logout</button>
+          </div>
+        ) : (
+          <button onClick={() => setShowAuthModal(true)} className="login-btn">
+            Login / Register
+          </button>
+        )}
+      </header>
 
       <div className="content-column">
-        <form onSubmit={handleSubmitPost} className="message-form">
-          <textarea
-            value={postText}
-            onChange={(e) => setPostText(e.target.value)}
-            onKeyDown={handleTextareaKeyDown}
-            placeholder="What's on your mind?"
-            rows="3"
-          />
-          <div className="form-actions">
-            <button type="submit" disabled={!postText.trim()}>
-              Post
-            </button>
-          </div>
-        </form>
+        {isAuthenticated && (
+          <form onSubmit={handleSubmitPost} className="message-form">
+            <textarea
+              value={postText}
+              onChange={(e) => setPostText(e.target.value)}
+              onKeyDown={handleTextareaKeyDown}
+              placeholder="What's on your mind?"
+              rows="3"
+            />
+            <div className="form-actions">
+              <button type="submit" disabled={!postText.trim()}>
+                Post
+              </button>
+            </div>
+          </form>
+        )}
 
         <ul className="message-list">
           {posts.map((post) => (
@@ -185,32 +356,32 @@ function App() {
                   <span className="timestamp">{formatDate(post.timestamp)}</span>
                 </div>
 
-                {/* Menu with three dots */}
-                <div className="message-menu">
-                  <button className="menu-btn" onClick={() => toggleMenu(post.id)}>
-                    <svg viewBox="0 0 24 24" fill="currentColor">
-                      <path d="M12 8c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm0 2c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm0 6c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z" />
-                    </svg>
-                  </button>
+                {isAuthenticated && currentUserId === post.owner.id && (
+                  <div className="message-menu">
+                    <button className="menu-btn" onClick={() => toggleMenu(post.id)}>
+                      <svg viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M12 8c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm0 2c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm0 6c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z" />
+                      </svg>
+                    </button>
 
-                  {showMenu[post.id] && (
-                    <div className="dropdown-menu">
-                      <button onClick={() => handleDeletePost(post.id)}>
-                        <svg viewBox="0 0 24 24" fill="currentColor">
-                          <path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z" />
-                        </svg>
-                        Delete
-                      </button>
-                    </div>
-                  )}
-                </div>
+                    {showMenu[post.id] && (
+                      <div className="dropdown-menu">
+                        <button onClick={() => handleDeletePost(post.id)}>
+                          <svg viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z" />
+                          </svg>
+                          Delete
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
 
               <p className="message-text">{post.text}</p>
 
               <div className="message-actions">
-                {/* Button for likes */}
-                <button 
+                <button
                   className={`action-btn ${post.is_liked_by_user ? 'liked' : ''}`}
                   onClick={() => handleToggleLike(post.id)}
                 >
@@ -220,7 +391,6 @@ function App() {
                   <span>{post.likes_count}</span>
                 </button>
 
-                {/* Button for comments */}
                 <button
                   className="action-btn"
                   onClick={() => toggleCommentsVisibility(post.id)}
@@ -249,7 +419,7 @@ function App() {
                         </div>
                         <p>{reply.text}</p>
                         <div className="comment-actions">
-                          <button 
+                          <button
                             className={`comment-like-btn ${reply.is_liked_by_user ? 'liked' : ''}`}
                             onClick={() => handleToggleLike(reply.id)}
                           >
@@ -263,31 +433,105 @@ function App() {
                     </div>
                   ))}
 
-                  <div className="add-comment">
-                    <input
-                      type="text"
-                      value={commentText[post.id] || ""}
-                      onChange={(e) => setCommentText(prev => ({ ...prev, [post.id]: e.target.value }))}
-                      placeholder="Write a comment..."
-                      onKeyPress={(e) => {
-                        if (e.key === 'Enter') {
-                          handleSubmitComment(e, post.id);
-                        }
-                      }}
-                    />
-                    <button
-                      onClick={(e) => handleSubmitComment(e, post.id)}
-                      disabled={!commentText[post.id]?.trim()}
-                    >
-                      Post
-                    </button>
-                  </div>
+                  {isAuthenticated && (
+                    <div className="add-comment">
+                      <input
+                        type="text"
+                        value={commentText[post.id] || ""}
+                        onChange={(e) => setCommentText(prev => ({ ...prev, [post.id]: e.target.value }))}
+                        placeholder="Write a comment..."
+                        onKeyPress={(e) => {
+                          if (e.key === 'Enter') {
+                            handleSubmitComment(e, post.id);
+                          }
+                        }}
+                      />
+                      <button
+                        onClick={(e) => handleSubmitComment(e, post.id)}
+                        disabled={!commentText[post.id]?.trim()}
+                      >
+                        Post
+                      </button>
+                    </div>
+                  )}
                 </div>
               )}
             </li>
           ))}
         </ul>
       </div>
+
+      {/* Auth Modal */}
+      {showAuthModal && (
+        <div className="modal-overlay" onClick={() => setShowAuthModal(false)}>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+            <button className="modal-close" onClick={() => setShowAuthModal(false)}>×</button>
+
+            <div className="auth-tabs">
+              <button
+                className={authMode === 'login' ? 'active' : ''}
+                onClick={() => { setAuthMode('login'); setAuthError(""); }}
+              >
+                Login
+              </button>
+              <button
+                className={authMode === 'register' ? 'active' : ''}
+                onClick={() => { setAuthMode('register'); setAuthError(""); }}
+              >
+                Register
+              </button>
+            </div>
+
+            {authError && <div className="auth-error">{authError}</div>}
+
+            {authMode === 'login' ? (
+              <form onSubmit={handleLogin} className="auth-form">
+                <input
+                  type="email"
+                  placeholder="Email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  required
+                />
+                <input
+                  type="password"
+                  placeholder="Password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                />
+                <button type="submit">Login</button>
+              </form>
+            ) : (
+              <form onSubmit={handleRegister} className="auth-form">
+                <input
+                  type="text"
+                  placeholder="Username"
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value)}
+                  required
+                />
+                <input
+                  type="email"
+                  placeholder="Email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  required
+                />
+                <input
+                  type="password"
+                  placeholder="Password (min 8 characters)"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  minLength={8}
+                  required
+                />
+                <button type="submit">Register</button>
+              </form>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
