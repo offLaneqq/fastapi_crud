@@ -1,71 +1,48 @@
-from datetime import datetime, timedelta, timezone
-from jose import JWTError, jwt # pyright: ignore[reportMissingModuleSource]
 from typing import Optional
-import bcrypt # pyright: ignore[reportMissingImports]
-from fastapi import Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from sqlalchemy.orm import Session
+import schemas
 from dependencies import get_db
+from core.security import decode_token
 import models
+from crud.user import get_user_by_name, get_user_by_email, create_user, authenticate_user
+from datetime import timedelta
+from core.security import create_access_token
+from core.config import settings
 
-SECRET_KEY = "your-secret-key-change-in-production"
-ALGORITHM = "HS256"
-ACCESS_TOKEN_EXPIRE_MINUTES = 30
 
-# HTTPBearer з auto_error=False дозволяє None (опціональна авторизація)
-security_optional = HTTPBearer(auto_error=False)
-# HTTPBearer з auto_error=True викидає помилку якщо немає токену (обов'язкова авторизація)
-security_required = HTTPBearer(auto_error=True)
+router = APIRouter(prefix="/auth", tags=["Authentication"])
 
-def verify_password(plain_password: str, hashed_password: str) -> bool:
-    return bcrypt.checkpw(plain_password.encode('utf-8')[:72], hashed_password.encode('utf-8'))
-
-def get_password_hash(password: str) -> str:
-    return bcrypt.hashpw(password.encode('utf-8')[:72], bcrypt.gensalt()).decode('utf-8')
-
-def create_access_token(data: dict, expires_delta: Optional[timedelta] = None) -> str:
-    to_encode = data.copy()
-    if expires_delta:
-        expire = datetime.now(timezone.utc) + expires_delta
-    else:
-        expire = datetime.now(timezone.utc) + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
-    to_encode.update({"exp": expire})
-    return jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
-
-def _decode_token(credentials: HTTPAuthorizationCredentials, db: Session) -> Optional[models.User]:
-    try:
-        payload = jwt.decode(credentials.credentials, SECRET_KEY, algorithms=[ALGORITHM])
-        email: Optional[str] = payload.get("sub")
-        if email is None:
-            return None
-    except JWTError:
-        return None
-
-    return db.query(models.User).filter(models.User.email == email).first()
-
-def get_current_user(
-    credentials: HTTPAuthorizationCredentials = Depends(security_required),
-    db: Session = Depends(get_db)
-) -> models.User:
-    user = _decode_token(credentials, db)
+# Create new user (registration)
+@router.post("/register", response_model=schemas.User)
+def register(user: schemas.UserCreate, db: Session = Depends(get_db)):
+    db_user_by_name = get_user_by_name(db, user.username)
+    if db_user_by_name:
+        raise HTTPException(status_code=400, detail="Username already registered")
     
-    if user is None:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Could not validate credentials",
-            headers={"WWW-Authenticate": "Bearer"},
-        )
-    
-    return user
+    db_user_by_email = get_user_by_email(db, user.email)
+    if db_user_by_email:
+        raise HTTPException(status_code=400, detail="Email already registered")
 
-def get_current_user_optional(
-    credentials: Optional[HTTPAuthorizationCredentials] = Depends(security_optional),
-    db: Session = Depends(get_db)
-) -> Optional[models.User]:
-    if credentials is None:
-        return None
-    
-    return _decode_token(credentials, db)
+    return create_user(db, user)
 
-# Alias for get_current_user
-get_current_active_user = get_current_user
+# User login to get access token
+@router.post("/login", response_model=schemas.Token)
+def login(form_data: schemas.LoginForm, db: Session = Depends(get_db)):
+    user = authenticate_user(db, form_data.email, form_data.password)
+    if not user:
+        raise HTTPException(status_code=400, detail="Invalid email or password")
+    access_token_expires = timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
+    access_token = create_access_token(
+        data={"sub": user.email},
+        expires_delta=access_token_expires
+    )
+    return {"access_token": access_token, "token_type": "bearer"}
+
+# Get info about the current user
+@router.get("/auth/me", response_model=schemas.User)
+def read_users_me(current_user: models.User = Depends(get_current_active_user)):
+    if current_user is None:
+        raise HTTPException(status_code=401, detail="Not authenticated")
+    return current_user

@@ -4,7 +4,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
 from typing import List, Optional
 from dependencies import get_db
-from auth import (
+from core.security import (
     get_current_active_user,
     get_current_user,
     get_current_user_optional,
@@ -37,40 +37,6 @@ app.add_middleware(
 def read_root():
     return {"message": "Welcome to the FastAPI CRUD application!"}
 
-# --- Authentication endpoints ---
-
-# Create new user (registration)
-@app.post("/auth/register", response_model=schemas.User)
-def register(user: schemas.UserCreate, db: Session = Depends(get_db)):
-    db_user_by_name = crud.get_user_by_name(db, user.username)
-    if db_user_by_name:
-        raise HTTPException(status_code=400, detail="Username already registered")
-    
-    db_user_by_email = crud.get_user_by_email(db, user.email)
-    if db_user_by_email:
-        raise HTTPException(status_code=400, detail="Email already registered")
-
-    return crud.create_user(db, user)
-
-# User login to get access token
-@app.post("/auth/login", response_model=schemas.Token)
-def login(form_data: schemas.LoginForm, db: Session = Depends(get_db)):
-    user = crud.authenticate_user(db, form_data.email, form_data.password)
-    if not user:
-        raise HTTPException(status_code=400, detail="Invalid email or password")
-    access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
-    access_token = create_access_token(
-        data={"sub": user.email},
-        expires_delta=access_token_expires
-    )
-    return {"access_token": access_token, "token_type": "bearer"}
-
-# Get info about the current user
-@app.get("/auth/me", response_model=schemas.User)
-def read_users_me(current_user: models.User = Depends(get_current_active_user)):
-    if current_user is None:
-        raise HTTPException(status_code=401, detail="Not authenticated")
-    return current_user
 
 # --- User endpoints ---
 

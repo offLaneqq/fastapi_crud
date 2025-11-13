@@ -79,7 +79,10 @@
 
 .modal-content {
   background: #1a1a1a;
-  padding: 2rem;
+  padding-top: 2.5rem;
+  padding-left: 2rem;
+  padding-right: 2rem;
+  padding-bottom: 2rem;
   border-radius: 12px;
   width: 90%;
   max-width: 400px;
@@ -90,8 +93,8 @@
 
 .modal-close {
   position: absolute;
-  top: 1rem;
-  right: 1rem;
+  top: 0.5rem;
+  right: 0.5rem;
   background: none;
   border: none;
   font-size: 2rem;
