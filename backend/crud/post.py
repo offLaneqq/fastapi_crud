@@ -17,7 +17,7 @@ def get_posts(db: Session, skip: int = 0, limit: int = 100):
         joinedload(models.Post.likes),
         joinedload(models.Post.replies).joinedload(models.Post.owner),
         joinedload(models.Post.replies).joinedload(models.Post.likes)
-    ).order_by(models.Post.timestamp.desc()).offset(skip).limit(limit).all()
+    ).filter(models.Post.parent_id == None).order_by(models.Post.timestamp.desc()).offset(skip).limit(limit).all()
 
 def create_post(db: Session, post: schemas.PostCreate, owner_id: int, parent_id: int | None = None):
     # Create a new post record
