@@ -5,7 +5,7 @@ import models, schemas
 from typing import List, Optional
 from crud import post as post_crud
 
-def get_post_with_metadata(db: Session, current_user: Optional[models.User], skip: int = 0, limit: int = 100) -> List[dict]:
+def get_posts_with_metadata(db: Session, current_user: Optional[models.User], skip: int = 0, limit: int = 100) -> List[dict]:
     posts = post_crud.get_posts(db, skip=skip, limit=limit)
     current_user_id: Optional[int] = getattr(current_user, 'id', None) if current_user is not None else None
 

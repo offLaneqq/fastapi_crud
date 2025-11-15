@@ -1,10 +1,7 @@
-from typing import Optional
-from fastapi import APIRouter, Depends, HTTPException, status
-from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 import schemas
 from dependencies import get_db, get_current_active_user
-from core.security import decode_token
 import models
 from crud.user import get_user_by_name, get_user_by_email, create_user, authenticate_user
 from datetime import timedelta
@@ -33,7 +30,7 @@ def login(form_data: schemas.LoginForm, db: Session = Depends(get_db)):
     user = authenticate_user(db, form_data.email, form_data.password)
     if not user:
         raise HTTPException(status_code=400, detail="Invalid email or password")
-    access_token_expires = timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
+    access_token_expires = timedelta(minutes=settings.access_token_expire_minutes)
     access_token = create_access_token(
         data={"sub": user.email},
         expires_delta=access_token_expires
@@ -41,6 +38,6 @@ def login(form_data: schemas.LoginForm, db: Session = Depends(get_db)):
     return {"access_token": access_token, "token_type": "bearer"}
 
 # Get info about the current user
-@router.get("/auth/me", response_model=schemas.User)
+@router.get("/me", response_model=schemas.User)
 def read_users_me(current_user: models.User = Depends(get_current_active_user)):
     return current_user

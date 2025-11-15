@@ -2,7 +2,8 @@ fastapi
 uvicorn
 sqlalchemy
 python-multipart
-pydantic[email, settings]
+pydantic[email]
+pydantic-settings
 python-jose[cryptography]
 bcrypt
 python-multipart

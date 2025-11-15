@@ -2,8 +2,8 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from typing import List, Optional
 
-from backend import models, schemas
-from backend.dependencies import get_current_user, get_current_user, get_current_user_optional, get_db
+import models, schemas
+from dependencies import get_current_user, get_current_user, get_current_user_optional, get_db
 from crud import post as post_crud
 from services import post_service
 
@@ -12,7 +12,7 @@ router = APIRouter(prefix="/posts", tags=["Posts"])
 # Endpoint to get a list of posts with their owners and comments
 @router.get("/", response_model=List[schemas.Post])
 def get_posts(skip: int = 0, limit: int = 100, current_user: Optional[models.User] = Depends(get_current_user_optional), db: Session = Depends(get_db)):
-    return post_service.get_post_with_metadata(db, current_user, skip, limit)
+    return post_service.get_posts_with_metadata(db, current_user, skip, limit)
            
 # Endpoint to get a specific post by ID
 @router.get("/{post_id}", response_model=schemas.Post)
