@@ -1,13 +1,11 @@
-from datetime import timedelta
-from fastapi import FastAPI, Depends, HTTPException, status
+from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from sqlalchemy.orm import Session
-from typing import List, Optional
+
+from routers import likes, posts
 from core.config import settings
-from dependencies import get_db, get_current_user_optional, get_current_user
 from routers import auth
 
-import crud, models, schemas
+import models
 from database import engine
 
 models.Base.metadata.create_all(bind=engine)
@@ -26,6 +24,8 @@ app.add_middleware(
 )
 
 app.include_router(auth.router)
+app.include_router(likes.router)
+app.include_router(posts.router)
 
 # Start page
 @app.get("/")
