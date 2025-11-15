@@ -436,6 +436,52 @@
   overflow: hidden;
 }
 
+.dropdown-menu button svg {
+  width: 18px;
+  height: 18px;
+  margin-right: 0.5rem;
+}
+
+.dropdown-menu button:first-child {
+  color: #0095f6;
+}
+
+.dropdown-menu button:first-child:hover {
+  background-color: rgba(0, 149, 246, 0.1);
+}
+
+.dropdown-menu button:last-child {
+  color: #e4405f;
+}
+
+.dropdown-menu button:last-child:hover {
+  background-color: rgba(228, 64, 95, 0.1);
+}
+
+/* Стилі для edit modal */
+.modal-content h2 {
+  margin: 0 0 1.5rem 0;
+  color: #e4e6eb;
+  font-size: 1.5rem;
+}
+
+.auth-form textarea {
+  padding: 0.75rem 1rem;
+  border: 1px solid #2d2d2d;
+  border-radius: 8px;
+  font-size: 1rem;
+  background-color: #0a0a0a;
+  color: #e4e6eb;
+  font-family: inherit;
+  resize: vertical;
+  min-height: 100px;
+}
+
+.auth-form textarea:focus {
+  outline: none;
+  border-color: #0095f6;
+}
+
 .dropdown-menu button {
   width: 100%;
   display: flex;

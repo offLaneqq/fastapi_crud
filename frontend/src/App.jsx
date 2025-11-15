@@ -8,6 +8,11 @@ function App() {
   const [posts, setPosts] = useState([]);
   const [postText, setPostText] = useState("");
 
+  // States for editing posts
+  const [editingPost, setEditingPost] = useState(null);
+  const [editText, setEditText] = useState("");
+  const [showEditModal, setShowEditModal] = useState(false);
+
   // Auth states
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [currentUserId, setCurrentUserId] = useState(1);
@@ -308,6 +313,40 @@ function App() {
     });
   };
 
+  const handleEditPost = (post) => {
+    setEditingPost(post);
+    setEditText(post.text);
+    setShowEditModal(true);
+    setShowMenu(prev => ({ ...prev, [post.id]: false })); // Close menu
+  };
+
+  const handleUpdatePost = async (e) => {
+    e.preventDefault();
+    if (!editingPost || !editText.trim()) return;
+
+    const token = localStorage.getItem("token");
+
+    try {
+      const response = await fetch(`${API_URL}/posts/${editingPost.id}?new_text=${encodeURIComponent(editText)}`, {
+        method: "PUT",
+        headers: { "Authorization": `Bearer ${token}` },
+      });
+
+      if (response.ok) {
+        setShowEditModal(false);
+        setEditingPost(null);
+        setEditText("");
+        fetchPosts();
+      } else {
+        console.error("Error updating post:", response.statusText);
+        alert("Error updating post");
+      }
+    } catch (error) {
+      console.error("Error updating post:", error);
+      alert("Network error. Please try again.");
+    }
+  };
+
   return (
     <div className="App">
       <header className="app-header">
@@ -366,6 +405,12 @@ function App() {
 
                     {showMenu[post.id] && (
                       <div className="dropdown-menu">
+                        <button onClick={() => handleEditPost(post)}>
+                          <svg viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z" />
+                          </svg>
+                          Edit
+                        </button>
                         <button onClick={() => handleDeletePost(post.id)}>
                           <svg viewBox="0 0 24 24" fill="currentColor">
                             <path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z" />
@@ -374,6 +419,39 @@ function App() {
                         </button>
                       </div>
                     )}
+                  </div>
+                )}
+
+                {showEditModal && (
+                  <div className="modal-overlay" onClick={() => setShowEditModal(false)}>
+                    <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+                      <button className="modal-close" onClick={() => setShowEditModal(false)}>×</button>
+
+                      <h2>Edit Post</h2>
+
+                      <form onSubmit={handleUpdatePost} className="auth-form">
+                        <textarea
+                          value={editText}
+                          onChange={(e) => setEditText(e.target.value)}
+                          placeholder="What's on your mind?"
+                          rows="5"
+                          required
+                          autoFocus
+                        />
+                        <div style={{ display: 'flex', gap: '0.5rem' }}>
+                          <button type="submit" disabled={!editText.trim()}>
+                            Save Changes
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setShowEditModal(false)}
+                            style={{ background: '#737373' }}
+                          >
+                            Cancel
+                          </button>
+                        </div>
+                      </form>
+                    </div>
                   </div>
                 )}
               </div>
