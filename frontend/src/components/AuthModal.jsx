@@ -1,8 +1,7 @@
 const AuthModal = ({
-    showAuthModal,
-    setShowAuthModal,
-    handleLogin,
-    handleRegister,
+    onClose,
+    onLogin,
+    onRegister,
     authMode,
     setAuthMode,
     authError,
@@ -12,14 +11,12 @@ const AuthModal = ({
     password,
     setPassword,
     username,
-    setUsername,
+    setUsername
 }) => {
-    if (!showAuthModal) return null;
-
     return (
-        <div className="modal-overlay" onClick={() => setShowAuthModal(false)}>
+        <div className="modal-overlay" onClick={onClose}>
             <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-                <button className="modal-close" onClick={() => setShowAuthModal(false)}>×</button>
+                <button className="modal-close" onClick={onClose}>×</button>
 
                 <div className="auth-tabs">
                     <button
@@ -39,7 +36,7 @@ const AuthModal = ({
                 {authError && <div className="auth-error">{authError}</div>}
 
                 {authMode === 'login' ? (
-                    <form onSubmit={handleLogin} className="auth-form">
+                    <form onSubmit={onLogin} className="auth-form">
                         <input
                             type="email"
                             placeholder="Email"
@@ -57,7 +54,7 @@ const AuthModal = ({
                         <button type="submit">Login</button>
                     </form>
                 ) : (
-                    <form onSubmit={handleRegister} className="auth-form">
+                    <form onSubmit={onRegister} className="auth-form">
                         <input
                             type="text"
                             placeholder="Username"
