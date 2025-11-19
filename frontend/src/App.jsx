@@ -1,27 +1,30 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import './App.css';
 import Header from "./components/Header";
 import PostForm from "./components/PostForm";
 import AuthModal from "./components/AuthModal";
-
-const API_URL = "http://localhost:8000";
+import PostCard from "./components/PostCard";
+import { useAuth } from "./hooks/useAuth";
+import { usePosts } from "./hooks/usePosts";
+import EditPostModal from "./components/EditPostModal";
 
 function App() {
-
   const { isAuthenticated, currentUserId, currentUsername, login, register, logout } = useAuth();
   const {
     posts,
+    showComments,
+    showMenu,
     fetchPosts,
     createPost,
-    toggleCommentsVisibility,
-    toggleMenu,
+    createComment,
+    updatePost,
     deletePost,
-    handleEditPost,
-    handleToggleLike,
-    handleSubmitComment,
-    updatePost
+    toggleLike,
+    toggleCommentsVisibility,
+    toggleMenu
   } = usePosts();
 
+  // UI states
   const [postText, setPostText] = useState("");
   const [editingPost, setEditingPost] = useState(null);
   const [editText, setEditText] = useState("");
@@ -33,9 +36,68 @@ function App() {
   const [password, setPassword] = useState("");
   const [authError, setAuthError] = useState("");
   const [commentText, setCommentText] = useState({});
-  const [showComments, setShowComments] = useState({});
-  const [showMenu, setShowMenu] = useState({});
 
+  // Handlers
+  const handleSubmitPost = async (e) => {
+    e.preventDefault();
+    if (!postText.trim()) return;
+
+    const result = await createPost(postText);
+    if (result.success) {
+      setPostText("");
+    }
+  };
+
+  const handleSubmitComment = async (e, postId) => {
+    e.preventDefault();
+
+    if (!isAuthenticated) {
+      setShowAuthModal(true);
+      return;
+    }
+
+    const currentCommentText = commentText[postId];
+    if (!currentCommentText?.trim()) return;
+
+    const result = await createComment(postId, currentCommentText);
+    if (result.success) {
+      setCommentText(prev => ({ ...prev, [postId]: "" }));
+    }
+  };
+
+  const handleEditPost = (post) => {
+    setEditingPost(post);
+    setEditText(post.text);
+    setShowEditModal(true);
+    toggleMenu(post.id); // Close menu
+  };
+
+  const handleUpdatePost = async (e) => {
+    e.preventDefault();
+    if (!editingPost || !editText.trim()) return;
+
+    const result = await updatePost(editingPost.id, editText);
+    if (result.success) {
+      setShowEditModal(false);
+      setEditingPost(null);
+      setEditText("");
+    } else {
+      alert("Error updating post");
+    }
+  };
+
+  const handleDeletePost = async (postId) => {
+    await deletePost(postId);
+  };
+
+  const handleToggleLike = async (postId) => {
+    if (!isAuthenticated) {
+      setShowAuthModal(true);
+      return;
+    }
+
+    await toggleLike(postId);
+  };
 
   const handleLogin = async (e) => {
     e.preventDefault();
@@ -66,7 +128,6 @@ function App() {
     } else {
       setAuthError(result.error);
     }
-
   };
 
   const handleLogout = () => {
@@ -79,8 +140,8 @@ function App() {
       <Header
         isAuthenticated={isAuthenticated}
         currentUsername={currentUsername}
-        handleLogout={handleLogout}
-        setShowAuthModal={setShowAuthModal}
+        onLogout={handleLogout}
+        onLoginClick={() => setShowAuthModal(true)}
       />
 
       <div className="content-column">
@@ -102,9 +163,9 @@ function App() {
               commentText={commentText}
               setCommentText={setCommentText}
               showComments={showComments}
-              toggleCommentsVisibility={toggleCommentsVisibility}
-              toggleMenu={toggleMenu}
               showMenu={showMenu}
+              onToggleComments={toggleCommentsVisibility}
+              onToggleMenu={toggleMenu}
               onDeletePost={handleDeletePost}
               onEditPost={handleEditPost}
               onToggleLike={handleToggleLike}
@@ -114,13 +175,11 @@ function App() {
         </ul>
       </div>
 
-      {/* Auth Modal */}
       {showAuthModal && (
         <AuthModal
-          showAuthModal={showAuthModal}
-          setShowAuthModal={setShowAuthModal}
-          handleLogin={handleLogin}
-          handleRegister={handleRegister}
+          onClose={() => setShowAuthModal(false)}
+          onLogin={handleLogin}
+          onRegister={handleRegister}
           authMode={authMode}
           setAuthMode={setAuthMode}
           authError={authError}
@@ -131,6 +190,15 @@ function App() {
           setPassword={setPassword}
           username={username}
           setUsername={setUsername}
+        />
+      )}
+
+      {showEditModal && (
+        <EditPostModal
+          onClose={() => setShowEditModal(false)}
+          editText={editText}
+          setEditText={setEditText}
+          onUpdate={handleUpdatePost}
         />
       )}
     </div>
