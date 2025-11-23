@@ -35,3 +35,27 @@ def authenticate_user(db: Session, email: str, password: str):
     if not verify_password(password, user.hashed_password):  # type: ignore
         return False
     return user
+
+def get_user_posts(db: Session, user_id: int):
+    # Get posts created by a specific user
+    return db.query(models.Post).filter(
+        models.Post.owner_id == user_id,
+        models.Post.parent_id == None
+    ).order_by(models.Post.timestamp.desc()).all()
+
+def get_user_replies(db: Session, user_id: int):
+    # Get replies created by a specific user
+    return db.query(models.Post).filter(
+        models.Post.owner_id == user_id,
+        models.Post.parent_id != None
+    ).order_by(models.Post.timestamp.desc()).all()
+
+def check_is_username_taken(db: Session, username: str) -> bool:
+    # Check if a username is already taken
+    user = get_user_by_name(db, username)
+    return user is not None
+
+def check_is_email_registered(db: Session, email: str) -> bool:
+    # Check if an email is already registered
+    user = get_user_by_email(db, email)
+    return user is not None
