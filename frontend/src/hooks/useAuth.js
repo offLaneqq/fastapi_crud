@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useQuery, useMutation } from "@tanstack/react-query";
 
 const API_URL = "http://localhost:8000";
 
@@ -7,32 +8,36 @@ export const useAuth = () => {
   const [currentUserId, setCurrentUserId] = useState(1);
   const [currentUsername, setCurrentUsername] = useState("");
 
-  useEffect(() => {
-    const token = localStorage.getItem("token");
-    if (token) {
-      fetchCurrentUser(token);
-    }
-  }, []);
+  const {data:currentUser, isLoading} = useQuery({
+    queryKey: ['currentUser'],
+    queryFn: async () => {
+      const token = localStorage.getItem("token");
+      if (!token) return null;
 
-  const fetchCurrentUser = async (token) => {
-    try {
       const response = await fetch(`${API_URL}/auth/me`, {
         headers: { "Authorization": `Bearer ${token}` },
       });
-      if (response.ok) {
-        const user = await response.json();
-        setCurrentUserId(user.id);
-        setCurrentUsername(user.username);
-        setIsAuthenticated(true);
-      } else {
-        setIsAuthenticated(false);
+      if (!response.ok) {
         localStorage.removeItem("token");
-      }
-    } catch (error) {
-      console.error("Error fetching current user:", error);
+        throw new Error("Not authenticated");
+      };
+      return await response.json();
+    },
+    enabled: !!localStorage.getItem("token"),
+    retry: false,
+    staleTime: Infinity,
+  })
+
+  useEffect(() => {
+    if (currentUser) {
+      setCurrentUserId(currentUser.id);
+      setCurrentUsername(currentUser.username);
+      setIsAuthenticated(true);
+    } else {
+      setIsAuthenticated(false);
       localStorage.removeItem("token");
     }
-  };
+  }, [currentUser]);
 
   const login = async (email, password) => {
     try {
@@ -45,7 +50,9 @@ export const useAuth = () => {
       if (response.ok) {
         const data = await response.json();
         localStorage.setItem("token", data.access_token);
-        await fetchCurrentUser(data.access_token);
+        
+        window.location.reload();
+
         return { success: true };
       } else {
         const errorData = await response.json();
@@ -86,9 +93,7 @@ export const useAuth = () => {
 
   const logout = () => {
     localStorage.removeItem("token");
-    setIsAuthenticated(false);
-    setCurrentUsername("");
-    setCurrentUserId(null);
+    window.location.reload();
   };
 
   return {

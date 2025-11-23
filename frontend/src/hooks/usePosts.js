@@ -1,38 +1,31 @@
 import { useState, useEffect } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 
 const API_URL = "http://localhost:8000";
 
 export const usePosts = () => {
-  const [posts, setPosts] = useState([]);
+  const queryClient = useQueryClient();
+  
   // States for editing posts
   const [showComments, setShowComments] = useState({});
   const [showMenu, setShowMenu] = useState({});
 
-  useEffect(() => {
-    fetchPosts();
-  }, []);
-
-  const fetchPosts = async () => {
-    try {
+  const {data: posts= [], isLoading} = useQuery({
+    queryKey: ['posts'],
+    queryFn: async () => {
       const token = localStorage.getItem("token");
       const headers = token ? { "Authorization": `Bearer ${token}` } : {};
 
       const response = await fetch(`${API_URL}/posts/`, { headers });
       if (!response.ok) throw new Error('Network response was not ok');
-      const data = await response.json();
-      setPosts(data);
-    } catch (error) {
-      console.error("Error fetching posts:", error);
+      return await response.json();
     }
-  };
+  });
 
-  // Create new post
-  const createPost = async (text) => {
-    if (!text.trim()) return;
+  const createPostMutation = useMutation({
+    mutationFn: async (text) => {
+      const token = localStorage.getItem("token");
 
-    const token = localStorage.getItem("token");
-
-    try {
       const response = await fetch(`${API_URL}/posts/`, {
         method: "POST",
         headers: {
@@ -41,106 +34,81 @@ export const usePosts = () => {
         },
         body: JSON.stringify({ text }),
       });
-
-      if (response.ok) {
-        await fetchPosts();
-        return { success: true };
-      }
-      return { success: false };
-    } catch (error) {
-      console.error("Error creating post:", error);
-      return { success: false };
+      if (!response.ok) throw new Error('Error creating post');
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries(['posts']);
     }
-  };
+  });
 
-  const createComment = async (postId, text) => {
-    const token = localStorage.getItem("token");
-
-    try {
-      const response = await fetch(`${API_URL}/posts/${postId}/replies`, {
-        method: "POST",
-        headers: { 
-          "Content-Type": "application/json", 
-          "Authorization": `Bearer ${token}` 
-        },
-        body: JSON.stringify({ text }),
-      });
-
-      if (response.ok) {
-        await fetchPosts();
-        return { success: true };
-      }
-      return { success: false };
-    } catch (error) {
-      console.error("Error creating comment:", error);
-      return { success: false };
-    }
-  };
-
-  const updatePost = async (postId, text) => {
-    const token = localStorage.getItem("token");
-
-    try {
+  const updatePostMutation = useMutation({
+    mutationFn: async ({ postId, text }) => {
+      const token = localStorage.getItem("token");
       const response = await fetch(`${API_URL}/posts/${postId}?new_text=${encodeURIComponent(text)}`, {
         method: "PUT",
         headers: { "Authorization": `Bearer ${token}` },
       });
+      if (!response.ok) throw new Error('Error updating post');
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries(['posts']);
+    }
+  });
 
-      if (response.ok) {
-        await fetchPosts();
-        return { success: true };
+  const deletePostMutation = useMutation({
+    mutationFn: async (postId) => {
+      if (!confirm("Are you sure you want to delete this post?")) {
+        throw new Error('Cancelled');
       }
-      return { success: false };
-    } catch (error) {
-      console.error("Error updating post:", error);
-      return { success: false };
-    }
-  };
-
-  const deletePost = async (postId) => {
-    if (!confirm("Are you sure you want to delete this post?")) {
-      return { success: false, cancelled: true };
-    }
-
-    const token = localStorage.getItem("token");
-
-    try {
+      const token = localStorage.getItem("token");
       const response = await fetch(`${API_URL}/posts/${postId}`, {
         method: "DELETE",
         headers: { "Authorization": `Bearer ${token}` },
       });
-
-      if (response.ok || response.status === 204) {
-        await fetchPosts();
-        setShowMenu(prev => ({ ...prev, [postId]: false }));
-        return { success: true };
-      }
-      return { success: false };
-    } catch (error) {
-      console.error("Error deleting post:", error);
-      return { success: false };
+      if (!response.ok && response.status !== 204) throw new Error('Error deleting post');
+      return postId;
+    },
+    onSuccess: (postId) => {
+      queryClient.invalidateQueries(['posts']);
+      setShowMenu(prev => ({ ...prev, [postId]: false }));
     }
-  };
+  });
 
-  const toggleLike = async (postId) => {
-    const token = localStorage.getItem("token");
-
-    try {
+  const toggleLikeMutation = useMutation({
+    mutationFn: async (postId) => {
+      const token = localStorage.getItem("token");
       const response = await fetch(`${API_URL}/posts/${postId}/like`, {
         method: "POST",
         headers: { "Authorization": `Bearer ${token}` },
       });
-
-      if (response.ok) {
-        await fetchPosts();
-        return { success: true };
-      }
-      return { success: false };
-    } catch (error) {
-      console.error("Error toggling like:", error);
-      return { success: false };
+      if (!response.ok) throw new Error('Error toggling like');
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries(['posts']);
     }
-  };
+  });
+
+  const createCommentMutation = useMutation({
+    mutationFn: async ({ postId, text }) => {
+      const token = localStorage.getItem("token");
+      const response = await fetch(`${API_URL}/posts/${postId}/replies`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`
+        },
+        body: JSON.stringify({ text }),
+      });
+      if (!response.ok) throw new Error('Error creating comment');
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries(['posts']);
+    }
+  });
 
   const toggleCommentsVisibility = (postId) => {
     setShowComments(prev => ({ ...prev, [postId]: !prev[postId] }));
@@ -152,14 +120,14 @@ export const usePosts = () => {
 
   return {
     posts,
+    isLoading,
     showComments,
     showMenu,
-    fetchPosts,
-    createPost,
-    createComment,
-    updatePost,
-    deletePost,
-    toggleLike,
+    createPost: (text) => createPostMutation.mutateAsync(text),
+    updatePost: ({ postId, text }) => updatePostMutation.mutateAsync({ postId, text }),
+    deletePost: (postId) => deletePostMutation.mutateAsync(postId),
+    toggleLike: (postId) => toggleLikeMutation.mutateAsync(postId),
+    createComment: ({ postId, text }) => createCommentMutation.mutateAsync({ postId, text }),
     toggleCommentsVisibility,
     toggleMenu
   };
