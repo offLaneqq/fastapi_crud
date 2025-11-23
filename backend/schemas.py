@@ -20,6 +20,16 @@ class UserCreate(UserBase):
         description="Password for the user account"
     )   # for creating a new user, all fields are inherited from UserBase
 
+class UserProfile(UserBase):
+    id: int
+    posts: List[Post] = []
+    comments: List[PostReply] = []
+    posts_count: int
+    comments_count: int
+
+    class Config:
+        from_attributes = True
+
 class User(UserBase):
     id: int
 
