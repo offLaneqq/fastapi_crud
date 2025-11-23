@@ -1,4 +1,6 @@
 import { useState } from "react";
+import { Routes, Route } from "react-router-dom";
+import ProfilePage from "./pages/ProfilePage";
 import './App.css';
 import Header from "./components/Header";
 import PostForm from "./components/PostForm";
@@ -7,6 +9,7 @@ import PostCard from "./components/PostCard";
 import { useAuth } from "./hooks/useAuth";
 import { usePosts } from "./hooks/usePosts";
 import EditPostModal from "./components/EditPostModal";
+import HomePage from "./pages/HomePage";
 
 function App() {
   const { isAuthenticated, currentUserId, currentUsername, login, register, logout } = useAuth();
@@ -140,40 +143,52 @@ function App() {
       <Header
         isAuthenticated={isAuthenticated}
         currentUsername={currentUsername}
+        currentUserId={currentUserId}
         onLogout={handleLogout}
         onLoginClick={() => setShowAuthModal(true)}
       />
 
-      <div className="content-column">
-        {isAuthenticated && (
-          <PostForm
+      <Routes>
+        <Route path="/" element={
+          <HomePage
+            isAuthenticated={isAuthenticated}
+            currentUserId={currentUserId}
+            posts={posts}
+            showComments={showComments}
+            showMenu={showMenu}
+            commentText={commentText}
+            setCommentText={setCommentText}
+            toggleCommentsVisibility={toggleCommentsVisibility}
+            toggleMenu={toggleMenu}
+            handleDeletePost={handleDeletePost}
+            handleEditPost={handleEditPost}
+            handleToggleLike={handleToggleLike}
+            handleSubmitComment={handleSubmitComment}
             postText={postText}
             setPostText={setPostText}
-            onSubmit={handleSubmitPost}
+            handleSubmitPost={handleSubmitPost}
           />
-        )}
-
-        <ul className="message-list">
-          {posts.map((post) => (
-            <PostCard
-              key={post.id}
-              post={post}
+        } />
+        <Route
+          path="/profile/:userId"
+          element={
+            <ProfilePage
               isAuthenticated={isAuthenticated}
               currentUserId={currentUserId}
-              commentText={commentText}
-              setCommentText={setCommentText}
               showComments={showComments}
               showMenu={showMenu}
-              onToggleComments={toggleCommentsVisibility}
-              onToggleMenu={toggleMenu}
-              onDeletePost={handleDeletePost}
-              onEditPost={handleEditPost}
-              onToggleLike={handleToggleLike}
-              onSubmitComment={handleSubmitComment}
+              commentText={commentText}
+              setCommentText={setCommentText}
+              toggleCommentsVisibility={toggleCommentsVisibility}
+              toggleMenu={toggleMenu}
+              handleDeletePost={handleDeletePost}
+              handleEditPost={handleEditPost}
+              handleToggleLike={handleToggleLike}
+              handleSubmitComment={handleSubmitComment}
             />
-          ))}
-        </ul>
-      </div>
+          }
+        />
+      </Routes>
 
       {showAuthModal && (
         <AuthModal
