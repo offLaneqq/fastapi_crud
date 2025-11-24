@@ -1,14 +1,15 @@
 import { useState, useEffect } from "react";
-import { useQuery, useMutation } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 
 const API_URL = "http://localhost:8000";
 
 export const useAuth = () => {
+  const queryClient = useQueryClient();
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [currentUserId, setCurrentUserId] = useState(1);
   const [currentUsername, setCurrentUsername] = useState("");
 
-  const {data:currentUser, isLoading} = useQuery({
+  const { data: currentUser, isLoading } = useQuery({
     queryKey: ['currentUser'],
     queryFn: async () => {
       const token = localStorage.getItem("token");
@@ -19,13 +20,15 @@ export const useAuth = () => {
       });
       if (!response.ok) {
         localStorage.removeItem("token");
-        throw new Error("Not authenticated");
+        return null;
       };
       return await response.json();
     },
     enabled: !!localStorage.getItem("token"),
     retry: false,
     staleTime: Infinity,
+    refetchOnMount: true,
+    refetchOnWindowFocus: false,
   })
 
   useEffect(() => {
@@ -35,7 +38,8 @@ export const useAuth = () => {
       setIsAuthenticated(true);
     } else {
       setIsAuthenticated(false);
-      localStorage.removeItem("token");
+      setCurrentUserId(null);
+      setCurrentUsername("");
     }
   }, [currentUser]);
 
@@ -50,8 +54,9 @@ export const useAuth = () => {
       if (response.ok) {
         const data = await response.json();
         localStorage.setItem("token", data.access_token);
-        
-        window.location.reload();
+
+        await queryClient.invalidateQueries(['currentUser']);
+        await queryClient.invalidateQueries(['posts']);
 
         return { success: true };
       } else {
@@ -93,7 +98,12 @@ export const useAuth = () => {
 
   const logout = () => {
     localStorage.removeItem("token");
-    window.location.reload();
+
+    setIsAuthenticated(false);
+    setCurrentUserId(null);
+    setCurrentUsername("");
+    queryClient.invalidateQueries(['currentUser']);
+    queryClient.invalidateQueries(['posts']);
   };
 
   return {
