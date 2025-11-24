@@ -17,7 +17,6 @@ function App() {
     posts,
     showComments,
     showMenu,
-    fetchPosts,
     createPost,
     createComment,
     updatePost,
@@ -111,7 +110,6 @@ function App() {
       setShowAuthModal(false);
       setEmail("");
       setPassword("");
-      fetchPosts();
     } else {
       setAuthError(result.error);
     }
@@ -127,7 +125,6 @@ function App() {
       setUsername("");
       setEmail("");
       setPassword("");
-      fetchPosts();
     } else {
       setAuthError(result.error);
     }
@@ -135,7 +132,6 @@ function App() {
 
   const handleLogout = () => {
     logout();
-    fetchPosts();
   };
 
   return (
