@@ -2,6 +2,8 @@ import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import PostCard from "../components/PostCard";
 import { formatDate } from "../utils/dateFormatter";
+import { useProfile } from "../hooks/useProfile";
+import { QueryClient, useQueryClient } from "@tanstack/react-query";
 
 const API_URL = "http://localhost:8000";
 
@@ -19,34 +21,91 @@ const ProfilePage = ({
   handleToggleLike,
   handleSubmitComment
 }) => {
+  const queryClient = useQueryClient();
   const { userId } = useParams();
-  const [profile, setProfile] = useState(null);
-  const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("posts"); // posts | comments
+  const [isEditing, setIsEditing] = useState(false);
+  const [editedUsername, setEditedUsername] = useState("");
+  const [editedEmail, setEditedEmail] = useState("");
+  const [isSaving, setIsSaving] = useState(false);
+  const [formError, setFormError] = useState("");
+
+  const { profile, isLoading, error: profileError, refetch } = useProfile(userId);
 
   useEffect(() => {
-    fetchProfile();
-  }, [userId]);
+    if (profile) {
+      setEditedUsername(profile.username);
+      setEditedEmail(profile.email);
+    }
+  }, [profile]);
 
-  const fetchProfile = async () => {
+  const handleSaveProfile = async () => {
+    setIsSaving(true);
+    setFormError("");
+
     try {
-      const response = await fetch(`${API_URL}/users/${userId}`);
+      const token = localStorage.getItem("token");
+
+      const updateData = {};
+      if (editedUsername !== profile.username) {
+        updateData.username = editedUsername;
+      }
+      if (editedEmail !== profile.email) {
+        updateData.email = editedEmail;
+      }
+
+      if(Object.keys(updateData).length === 0) {
+        setIsSaving(false);
+        setIsEditing(false);
+        return;
+      }
+
+      const response = await fetch(`${API_URL}/users/me`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`,
+        },
+        body: JSON.stringify(updateData),
+      });
+
       if (response.ok) {
-        const data = await response.json();
-        setProfile(data);
+        const updatedUser = await response.json();
+        setIsEditing(false);
+        queryClient.setQueriesData(['profile', userId], (oldData) => ({
+          ...oldData,
+          username: updatedUser.username,
+          email: updatedUser.email,
+        }));
+        queryClient.setQueriesData(['currentUser'], (oldData) => ({
+          ...oldData,
+          username: updatedUser.username,
+          email: updatedUser.email,
+        }));
+        queryClient.invalidateQueries(['posts']);
+      } else {
+        const errorData = await response.json();
+        throw new Error(errorData.message || "Failed to update profile");
       }
     } catch (error) {
-      console.error("Error fetching profile:", error);
+      setError(error.message);
     } finally {
-      setLoading(false);
+      setIsSaving(false);
     }
   };
 
-  if (loading) {
+  const handleCancelEdit = () => {
+    setIsEditing(false);
+    setEditedUsername(profile.username);
+    setEditedEmail(profile.email);
+    setError("");
+  };
+
+  if (isLoading) {
     return <div className="loading">Loading profile...</div>;
   }
 
-  if (!profile) {
+  if (formError || !profile) {
     return <div className="error">User not found</div>;
   }
 
@@ -59,17 +118,63 @@ const ProfilePage = ({
           className="profile-avatar"
         />
         <div className="profile-info">
-          <h1>{profile.username}</h1>
-          <p className="profile-email">{profile.email}</p>
-          <div className="profile-stats">
-            <span>{profile.posts_count} Posts</span>
-            <span>{profile.comments_count} Comments</span>
-          </div>
+          {isEditing ? (
+            <input
+              type="text"
+              value={editedUsername}
+              onChange={(e) => setEditedUsername(e.target.value)}
+              className="profile-input"
+              placeholder={profile.username}
+            />
+          ) : (
+            <h1>{profile.username}</h1>
+          )}
+          {isEditing ? (
+            <input
+              type="email"
+              value={editedEmail}
+              onChange={(e) => setEditedEmail(e.target.value)}
+              className="profile-input"
+              placeholder={profile.email}
+            />
+          ) : (
+            <p className="profile-email">{profile.email}</p>
+          )}
+
+          {formError && <p className="error-message">{formError}</p>}
+
           {currentUserId === profile.id && (
-            <button className="edit-profile-btn">Edit Profile</button>
+            <div className="profile-actions">
+              {isEditing ? (
+                <>
+                  <button
+                    className="save-profile-btn"
+                    onClick={handleSaveProfile}
+                    disabled={isSaving}
+                  >
+                    {isSaving ? "Saving..." : "Save"}
+                  </button>
+                  <button
+                    className="cancel-edit-btn"
+                    onClick={handleCancelEdit}
+                    disabled={isSaving}
+                  >
+                    Cancel
+                  </button>
+                </>
+              ) : (
+                <button
+                  className="edit-profile-btn"
+                  onClick={() => setIsEditing(true)}
+                >
+                  Edit Profile
+                </button>
+              )}
+            </div>
           )}
         </div>
       </div>
+
 
       <div className="profile-tabs">
         <button
