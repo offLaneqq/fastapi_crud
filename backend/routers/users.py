@@ -55,3 +55,38 @@ def update_profile(username: Optional[str] = None,
     db.commit()
     db.refresh(current_user)
     return current_user
+
+@router.put("/me", response_model=schemas.User)
+def update_profile_me(
+    user_update: schemas.UserUpdate,  # ✅ JSON body
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user)
+):
+    """Update current user's profile"""
+    print(f"🔍 Received update: {user_update}")  # ✅ Debug log
+    print(f"📝 Current user: id={current_user.id}, username={current_user.username}")
+    
+
+    if user_update.username:
+        if user_crud.check_is_username_taken(db, user_update.username):
+            raise HTTPException(status_code=400, detail="Username already taken")
+        
+        print(f"📝 Updating username: {current_user.username} → {user_update.username}")
+        setattr(current_user, 'username', user_update.username)
+    
+    # ✅ Оновити email
+    if user_update.email:
+        # Перевірити чи email вже зайнятий
+        if user_crud.check_is_email_registered(db, user_update.email):
+            raise HTTPException(status_code=400, detail="Email already taken")
+        
+        print(f"📧 Updating email: {current_user.email} → {user_update.email}")
+        setattr(current_user, 'email', user_update.email)
+    
+    # ✅ ВАЖЛИВО: commit змін в БД
+    db.commit()
+    db.refresh(current_user)
+    
+    print(f"✅ User updated in DB: username={current_user.username}, email={current_user.email}")
+    
+    return current_user
