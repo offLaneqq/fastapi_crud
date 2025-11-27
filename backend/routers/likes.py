@@ -19,7 +19,7 @@ def toggle_like(post_id: int, current_user: models.User = Depends(get_current_us
     db.refresh(db_post)
     liked_count = len(db_post.likes)
 
-    return {"is_liked": is_liked, "likes_count": liked_count}
+    return {"is_liked_by_user": is_liked, "likes_count": liked_count}
 
 # Get list of likes for a post
 @router.get("/{post_id}/likes", status_code=status.HTTP_200_OK)
