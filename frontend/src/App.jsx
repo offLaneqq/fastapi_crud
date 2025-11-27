@@ -71,7 +71,6 @@ function App() {
     setEditingPost(post);
     setEditText(post.text);
     setShowEditModal(true);
-    toggleMenu(post.id); // Close menu
   };
 
   const handleUpdatePost = async (e) => {
@@ -179,7 +178,6 @@ function App() {
               toggleMenu={toggleMenu}
               handleDeletePost={handleDeletePost}
               handleEditPost={handleEditPost}
-              handleToggleLike={handleToggleLike}
               handleSubmitComment={handleSubmitComment}
             />
           }
