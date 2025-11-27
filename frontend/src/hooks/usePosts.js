@@ -5,12 +5,12 @@ const API_URL = "http://localhost:8000";
 
 export const usePosts = () => {
   const queryClient = useQueryClient();
-  
+
   // States for editing posts
   const [showComments, setShowComments] = useState({});
   const [showMenu, setShowMenu] = useState({});
 
-  const {data: posts= [], isLoading} = useQuery({
+  const { data: posts = [], isLoading } = useQuery({
     queryKey: ['posts'],
     queryFn: async () => {
       const token = localStorage.getItem("token");
@@ -39,6 +39,10 @@ export const usePosts = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries(['posts']);
+      const currentUserId = localStorage.getItem("user_id");
+      if (currentUserId) {
+        queryClient.invalidateQueries(['profile', parseInt(currentUserId)]);
+      }
     }
   });
 
@@ -54,6 +58,7 @@ export const usePosts = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries(['posts']);
+      queryClient.invalidateQueries(['profile', updatedPost.owner.id]);
     }
   });
 
@@ -73,6 +78,10 @@ export const usePosts = () => {
     onSuccess: (postId) => {
       queryClient.invalidateQueries(['posts']);
       setShowMenu(prev => ({ ...prev, [postId]: false }));
+      const currentUserId = localStorage.getItem("user_id");
+      if (currentUserId) {
+        queryClient.invalidateQueries(['profile', parseInt(currentUserId)]);
+      }
     }
   });
 
@@ -84,11 +93,30 @@ export const usePosts = () => {
         headers: { "Authorization": `Bearer ${token}` },
       });
       if (!response.ok) throw new Error('Error toggling like');
-      return response.json();
+      const data = await response.json();
+      return { postId, ...data };
     },
-    onSuccess: () => {
+    onSuccess: (result) => {
+      // Оновити HomePage
+      queryClient.setQueryData(['posts'], (old) =>
+        old?.map(post =>
+          post.id === result.postId
+            ? {
+              ...post,
+              is_liked_by_user: result.is_liked_by_user,
+              likes_count: result.likes_count
+            }
+            : post
+        )
+      );
+
+      // Invalidate профілі
+      queryClient.invalidateQueries(['profile']);
+    },
+    onError: (err) => {
+      console.error('Error toggling like:', err);
       queryClient.invalidateQueries(['posts']);
-    }
+    },
   });
 
   const createCommentMutation = useMutation({
@@ -107,11 +135,23 @@ export const usePosts = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries(['posts']);
+
+      const posts = queryClient.getQueryData(['posts']);
+      const post = posts?.find(p => p.id === data.postId);
+      if (post) {
+        queryClient.invalidateQueries(['profile', post.owner.id]);
+      }
     }
   });
 
   const toggleCommentsVisibility = (postId) => {
-    setShowComments(prev => ({ ...prev, [postId]: !prev[postId] }));
+    setShowComments((prev) => {
+      if (prev[postId]) {
+        return {};
+      } else {
+        return { [postId]: true };
+      }
+    });
   };
 
   const toggleMenu = (postId) => {
