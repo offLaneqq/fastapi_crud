@@ -3,7 +3,8 @@ import { useParams } from "react-router-dom";
 import PostCard from "../components/PostCard";
 import { formatDate } from "../utils/dateFormatter";
 import { useProfile } from "../hooks/useProfile";
-import { QueryClient, useQueryClient } from "@tanstack/react-query";
+import { useQueryClient } from "@tanstack/react-query";
+import { getAvatarUrl } from "../utils/avatarColor";
 
 const API_URL = "http://localhost:8000";
 
@@ -18,7 +19,6 @@ const ProfilePage = ({
   toggleMenu,
   handleDeletePost,
   handleEditPost,
-  handleToggleLike,
   handleSubmitComment
 }) => {
   const queryClient = useQueryClient();
@@ -30,7 +30,7 @@ const ProfilePage = ({
   const [isSaving, setIsSaving] = useState(false);
   const [formError, setFormError] = useState("");
 
-  const { profile, isLoading, error: profileError, refetch } = useProfile(userId);
+  const { profile, isLoading, error: profileError, toggleLike } = useProfile(userId);
 
   useEffect(() => {
     if (profile) {
@@ -38,6 +38,10 @@ const ProfilePage = ({
       setEditedEmail(profile.email);
     }
   }, [profile]);
+
+  const handleToggleLike = async (postId) => {
+    await toggleLike.mutateAsync(postId);
+  };
 
   const handleSaveProfile = async () => {
     setIsSaving(true);
@@ -121,7 +125,7 @@ const ProfilePage = ({
     <div className="profile-page">
       <div className="profile-header">
         <img
-          src={profile.avatar_url || `https://ui-avatars.com/api/?name=${profile.username}&background=random&size=128`}
+          src={getAvatarUrl(profile.username, 80)}
           alt={profile.username}
           className="profile-avatar"
         />

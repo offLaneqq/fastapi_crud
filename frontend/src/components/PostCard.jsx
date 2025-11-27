@@ -1,5 +1,8 @@
 import { formatDate } from '../utils/dateFormatter';
+import { getAvatarUrl } from '../utils/avatarColor';
 import CommentSection from './CommentSection';
+import { Link } from 'react-router-dom';
+import { useEffect, useRef } from 'react';
 
 const PostCard = ({
   post,
@@ -16,21 +19,69 @@ const PostCard = ({
   onToggleLike,
   onSubmitComment
 }) => {
+  const isOwner = isAuthenticated && currentUserId === post.owner.id;
+  const menuRef = useRef(null);
+
+  // ✅ Закриття меню при кліку поза ним
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (menuRef.current && !menuRef.current.contains(event.target)) {
+        if (showMenu[post.id]) {
+          onToggleMenu(post.id);
+        }
+      }
+    };
+
+    if (showMenu[post.id]) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [showMenu, post.id, onToggleMenu]);
+
+  useEffect(() => {
+    const handleEscape = (event) => {
+      if (event.key === 'Escape' && showMenu[post.id]) {
+        onToggleMenu(post.id);
+      }
+    };
+
+    if (showMenu[post.id]) {
+      document.addEventListener('keydown', handleEscape);
+    }
+
+    return () => {
+      document.removeEventListener('keydown', handleEscape);
+    };
+  }, [showMenu, post.id, onToggleMenu]);  
+
+  const handleReport = () => {
+    if (window.confirm('Report this post for violating community guidelines?')) {
+      alert('Post reported. Thank you for keeping our community safe.');
+      onToggleMenu(post.id);
+    }
+  };
+
   return (
     <li className="message-card">
       <div className="message-header">
-        <img
-          src={post.owner.avatar_url || `https://ui-avatars.com/api/?name=${post.owner.username}&background=random`}
-          alt={`avatar for ${post.owner.username}`}
-          className="avatar"
-        />
-        <div className="user-info">
+        <Link to={`/profile/${post.owner.id}`} className="post-author">
+          <img
+            src={getAvatarUrl(post.owner.username, 32)}
+            alt={post.owner.username}
+            className="comment-avatar"
+          />
           <strong>{post.owner.username}</strong>
-          <span className="timestamp">{formatDate(post.timestamp)}</span>
-        </div>
+        </Link>
+        <div className='header-right-section'>
 
-        {isAuthenticated && currentUserId === post.owner.id && (
-          <div className="message-menu">
+        </div>
+        <div className="timestamp">{formatDate(post.timestamp)}</div>
+
+        {isAuthenticated && (
+          <div className="message-menu" ref={menuRef}>
             <button className="menu-btn" onClick={() => onToggleMenu(post.id)}>
               <svg viewBox="0 0 24 24" fill="currentColor">
                 <path d="M12 8c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm0 2c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm0 6c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z" />
@@ -39,18 +90,29 @@ const PostCard = ({
 
             {showMenu[post.id] && (
               <div className="dropdown-menu">
-                <button onClick={() => onEditPost(post)}>
-                  <svg viewBox="0 0 24 24" fill="currentColor">
-                    <path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z" />
-                  </svg>
-                  Edit
-                </button>
-                <button onClick={() => onDeletePost(post.id)}>
-                  <svg viewBox="0 0 24 24" fill="currentColor">
-                    <path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z" />
-                  </svg>
-                  Delete
-                </button>
+                {isOwner ? (
+                  <div>
+                    <button onClick={() => onEditPost(post)}>
+                      <svg viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z" />
+                      </svg>
+                      Edit
+                    </button>
+                    <button onClick={() => onDeletePost(post.id)}>
+                      <svg viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z" />
+                      </svg>
+                      Delete
+                    </button>
+                  </div>
+                ) : (
+                  <button onClick={handleReport} className="report-btn">
+                    <svg viewBox="0 0 24 24" fill="currentColor">
+                      <path d="M1 21h22L12 2 1 21zm12-3h-2v-2h2v2zm0-4h-2v-4h2v4z" />
+                    </svg>
+                    Report
+                  </button>
+                )}
               </div>
             )}
           </div>
