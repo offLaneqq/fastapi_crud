@@ -1,3 +1,4 @@
+from datetime import timedelta
 from fastapi import APIRouter, Depends, status, HTTPException
 from sqlalchemy.orm import Session
 from typing import List, Optional
@@ -5,6 +6,7 @@ from crud import user as user_crud
 import models, schemas
 from dependencies import get_current_user, get_db
 from services import user_service
+from core.security import create_access_token
     
 
 router = APIRouter(prefix="/users", tags=["Users"])
@@ -40,23 +42,7 @@ def get_user_profile(user_id: int, db: Session = Depends(get_db)):
         "comments_count": len(comments)
     }
 
-@router.put("/{user_id}", response_model=schemas.User)
-def update_profile(username: Optional[str] = None,
-                   email: Optional[str] = None,
-                   db: Session = Depends(get_db),
-                   current_user: models.User = Depends(get_current_user)):
-    
-    if username and user_crud.check_is_username_taken(db, username=username):
-        setattr(current_user, 'username', username)
-    
-    if email and user_crud.check_is_email_registered(db, email=email):
-        setattr(current_user, 'email', email)
-    
-    db.commit()
-    db.refresh(current_user)
-    return current_user
-
-@router.put("/me", response_model=schemas.User)
+@router.put("/me")
 def update_profile_me(
     user_update: schemas.UserUpdate,  # ✅ JSON body
     db: Session = Depends(get_db),
@@ -70,23 +56,36 @@ def update_profile_me(
     if user_update.username:
         if user_crud.check_is_username_taken(db, user_update.username):
             raise HTTPException(status_code=400, detail="Username already taken")
-        
-        print(f"📝 Updating username: {current_user.username} → {user_update.username}")
         setattr(current_user, 'username', user_update.username)
-    
-    # ✅ Оновити email
+
+    # ✅ Update email if provided
+    email_changed = False
     if user_update.email:
-        # Перевірити чи email вже зайнятий
+        # Check if email is already registered
         if user_crud.check_is_email_registered(db, user_update.email):
             raise HTTPException(status_code=400, detail="Email already taken")
-        
-        print(f"📧 Updating email: {current_user.email} → {user_update.email}")
         setattr(current_user, 'email', user_update.email)
+        email_changed = True
     
-    # ✅ ВАЖЛИВО: commit змін в БД
+    # ✅ IMPORTANT: commit changes to the DB
     db.commit()
     db.refresh(current_user)
+
+    new_token = None
+    if email_changed:
+        # Generate a new access token with the updated email
+        new_token = create_access_token(data={"sub": current_user.email}, expires_delta=timedelta(minutes=60))
+        print(f"🔑 Generated new token for updated email: {new_token}")
     
     print(f"✅ User updated in DB: username={current_user.username}, email={current_user.email}")
     
-    return current_user
+    return {
+        "user": {
+            "id": current_user.id,
+            "username": current_user.username,
+            "email": current_user.email,
+            "avatar_url": current_user.avatar_url
+        },
+        "access_token": new_token,
+        "token_type": "bearer" if new_token else None
+    }

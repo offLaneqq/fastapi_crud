@@ -1,6 +1,12 @@
 from sqlalchemy.orm import Session
-import models, schemas
+from typing import TYPE_CHECKING
+import schemas
 from core.security import verify_password, get_password_hash
+
+if TYPE_CHECKING:
+    import models
+else:
+    import models
 
 def get_user(db: Session, user_id: int):
     # Get a user by ID
