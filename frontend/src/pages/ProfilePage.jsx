@@ -70,14 +70,22 @@ const ProfilePage = ({
       });
 
       if (response.ok) {
-        const updatedUser = await response.json();
+        const data = await response.json();
+        const updatedUser = data.user;
+
+        if (data.access_token) {
+          localStorage.setItem("token", data.access_token);
+          queryClient.invalidateQueries(['currentUser']);
+        }
+
         setIsEditing(false);
-        queryClient.setQueriesData(['profile', userId], (oldData) => ({
+        
+        queryClient.setQueryData(['profile', userId], (oldData) => ({
           ...oldData,
           username: updatedUser.username,
           email: updatedUser.email,
         }));
-        queryClient.setQueriesData(['currentUser'], (oldData) => ({
+        queryClient.setQueryData(['currentUser'], (oldData) => ({
           ...oldData,
           username: updatedUser.username,
           email: updatedUser.email,
@@ -85,10 +93,10 @@ const ProfilePage = ({
         queryClient.invalidateQueries(['posts']);
       } else {
         const errorData = await response.json();
-        throw new Error(errorData.message || "Failed to update profile");
+        setFormError(errorData.detail || "Failed to update profile");
       }
     } catch (error) {
-      setError(error.message);
+      setFormError(error.message);
     } finally {
       setIsSaving(false);
     }
@@ -98,14 +106,14 @@ const ProfilePage = ({
     setIsEditing(false);
     setEditedUsername(profile.username);
     setEditedEmail(profile.email);
-    setError("");
+    setFormError("");
   };
 
   if (isLoading) {
     return <div className="loading">Loading profile...</div>;
   }
 
-  if (formError || !profile) {
+  if (profileError || !profile) {
     return <div className="error">User not found</div>;
   }
 
@@ -155,7 +163,7 @@ const ProfilePage = ({
                     {isSaving ? "Saving..." : "Save"}
                   </button>
                   <button
-                    className="cancel-edit-btn"
+                    className="cancel-profile-btn"
                     onClick={handleCancelEdit}
                     disabled={isSaving}
                   >
