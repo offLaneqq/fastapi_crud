@@ -35,6 +35,11 @@ class UserUpdate(BaseModel):
     email: Optional[EmailStr] = None
     avatar_url: Optional[str] = None
 
+class UserUpdateResponse(BaseModel):
+    user: User
+    access_token: Optional[str] = None
+    token_type: Optional[str] = None
+
 class User(UserBase):
     id: int
 
