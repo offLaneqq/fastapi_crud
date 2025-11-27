@@ -23,7 +23,6 @@ body {
 
 /* Заголовок */
 h1 {
-  text-align: center;
   color: #e4e6eb;
   margin: 1.5rem 0;
   font-size: 2rem;
@@ -41,10 +40,10 @@ h1 {
 .message-form {
   background-color: #1a1a1a;
   border: 1px solid #2d2d2d;
-  border-top-left-radius: 16px;
-  border-top-right-radius: 16px;
+  border-bottom-left-radius: 16px;
+  border-bottom-right-radius: 16px;
   padding: 1.5rem;
-  margin-bottom: 1.5rem;
+  margin-bottom: 1rem;
 }
 
 .message-form textarea {
