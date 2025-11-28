@@ -31,7 +31,7 @@ const HomePage = ({
       )}
 
       <ul className="message-list">
-        {posts.map((post) => (
+        {posts?.map((post) => (
           <PostCard
             key={post.id}
             post={post}
