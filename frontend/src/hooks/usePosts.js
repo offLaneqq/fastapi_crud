@@ -96,26 +96,52 @@ export const usePosts = () => {
       const data = await response.json();
       return { postId, ...data };
     },
-    onSuccess: (result) => {
-      // Оновити HomePage
+    onMutate: async (postId) => {
+      await queryClient.cancelQueries(['posts']);
+      const previousPosts = queryClient.getQueryData(['posts']);
+
       queryClient.setQueryData(['posts'], (old) =>
         old?.map(post =>
-          post.id === result.postId
+          post.id === postId
             ? {
-              ...post,
-              is_liked_by_user: result.is_liked_by_user,
-              likes_count: result.likes_count
-            }
+                ...post,
+                is_liked_by_user: !post.is_liked_by_user,
+                likes_count: post.is_liked_by_user 
+                  ? post.likes_count - 1 
+                  : post.likes_count + 1
+              }
             : post
         )
       );
 
-      // Invalidate профілі
-      queryClient.invalidateQueries(['profile']);
+      return { previousPosts };
     },
-    onError: (err) => {
+    onSuccess: (result) => {
+      queryClient.setQueryData(['posts'], (old) => {
+        if (!Array.isArray(old)) return old;
+        
+        return old.map(post =>
+          post.id === result.postId
+            ? {
+                ...post,
+                is_liked_by_user: result.is_liked_by_user,
+                likes_count: result.likes_count
+              }
+            : post
+        );
+      });
+      
+      // ✅ Invalidate тільки конкретний профіль
+      const post = queryClient.getQueryData(['posts'])?.find(p => p.id === result.postId);
+      if (post?.owner?.id) {
+        queryClient.invalidateQueries(['profile', post.owner.id]);
+      }
+    },
+    onError: (err, postId, context) => {
+      if (context?.previousPosts) {
+        queryClient.setQueryData(['posts'], context.previousPosts);
+      }
       console.error('Error toggling like:', err);
-      queryClient.invalidateQueries(['posts']);
     },
   });
 
