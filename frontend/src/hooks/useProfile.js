@@ -22,7 +22,7 @@ export const useProfile = (userId) => {
       }
       return response.json();
     },
-    enabled: !!userId, // Виконати тільки якщо є userId
+    enabled: !!userId, 
   });
 
   const toggleLike = useMutation({
@@ -36,11 +36,31 @@ export const useProfile = (userId) => {
       const data = await response.json();
       return { postId, ...data };
     },
-    onSuccess: (result) => {
-      // Оновити профіль
+    onMutate: async (postId) => { 
+      await queryClient.cancelQueries(['profile', userId]);
+
+      const previousProfile = queryClient.getQueryData(['profile', userId]);
+
       queryClient.setQueryData(['profile', userId], (old) => ({
         ...old,
         posts: old?.posts?.map(post =>
+          post.id === postId
+            ? {
+              ...post,
+              is_liked_by_user: !post.is_liked_by_user,
+              likes_count: post.is_liked_by_user 
+                ? post.likes_count - 1 
+                : post.likes_count + 1
+            }
+            : post
+        ),
+      }));
+
+      return { previousProfile };
+    },
+    onSuccess: (result) => {
+      queryClient.setQueryData(['posts'], (old) =>
+        old?.map(post =>
           post.id === result.postId
             ? {
               ...post,
@@ -48,16 +68,14 @@ export const useProfile = (userId) => {
               likes_count: result.likes_count
             }
             : post
-        ),
-      }));
-
-      // Invalidate HomePage
-      queryClient.invalidateQueries(['posts']);
+        )
+      );
     },
-    onError: (err) => {
+    onError: (err, postId, context) => { 
+      if (context?.previousProfile) {
+        queryClient.setQueryData(['profile', userId], context.previousProfile);
+      }
       console.error('Error toggling like:', err);
-      queryClient.invalidateQueries(['profile', userId]);
-      queryClient.invalidateQueries(['posts']);
     },
   });
 
