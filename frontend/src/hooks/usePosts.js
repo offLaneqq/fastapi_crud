@@ -133,12 +133,12 @@ export const usePosts = () => {
       const post = queryClient.getQueryData(['posts'])?.find(p => p.id === result.postId);
 
       if (post?.owner?.id) {
-        const oldProfile = queryClient.getQueryData(['profile', post.owner.id]);
+        queryClient.setQueryData(['profile', post.owner.id], (old) => {
+          if (!old?.posts) return old;
 
-        if (oldProfile) {
-          queryClient.setQueryData(['profile', post.owner.id], (old) => ({
+          return {
             ...old,
-            posts: old.posts?.map(p =>
+            posts: old.posts.map(p =>
               p.id === result.postId
                 ? {
                   ...p,
@@ -147,10 +147,8 @@ export const usePosts = () => {
                 }
                 : p
             )
-          }));
-        } else {
-          queryClient.invalidateQueries(['profile', post.owner.id]);
-        }
+          };
+        });
       }
     },
     onError: (err, postId, context) => {
