@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 
 const API_URL = "http://localhost:8000";
@@ -6,7 +6,6 @@ const API_URL = "http://localhost:8000";
 export const usePosts = () => {
   const queryClient = useQueryClient();
 
-  // States for editing posts
   const [showComments, setShowComments] = useState({});
   const [showMenu, setShowMenu] = useState({});
 
@@ -56,7 +55,7 @@ export const usePosts = () => {
       if (!response.ok) throw new Error('Error updating post');
       return response.json();
     },
-    onSuccess: () => {
+    onSuccess: (updatedPost) => {
       queryClient.invalidateQueries(['posts']);
       queryClient.invalidateQueries(['profile', updatedPost.owner.id]);
     }
@@ -104,12 +103,12 @@ export const usePosts = () => {
         old?.map(post =>
           post.id === postId
             ? {
-                ...post,
-                is_liked_by_user: !post.is_liked_by_user,
-                likes_count: post.is_liked_by_user 
-                  ? post.likes_count - 1 
-                  : post.likes_count + 1
-              }
+              ...post,
+              is_liked_by_user: !post.is_liked_by_user,
+              likes_count: post.is_liked_by_user
+                ? post.likes_count - 1
+                : post.likes_count + 1
+            }
             : post
         )
       );
@@ -119,22 +118,39 @@ export const usePosts = () => {
     onSuccess: (result) => {
       queryClient.setQueryData(['posts'], (old) => {
         if (!Array.isArray(old)) return old;
-        
+
         return old.map(post =>
           post.id === result.postId
             ? {
-                ...post,
-                is_liked_by_user: result.is_liked_by_user,
-                likes_count: result.likes_count
-              }
+              ...post,
+              is_liked_by_user: result.is_liked_by_user,
+              likes_count: result.likes_count
+            }
             : post
         );
       });
-      
-      // ✅ Invalidate тільки конкретний профіль
+
       const post = queryClient.getQueryData(['posts'])?.find(p => p.id === result.postId);
+
       if (post?.owner?.id) {
-        queryClient.invalidateQueries(['profile', post.owner.id]);
+        const oldProfile = queryClient.getQueryData(['profile', post.owner.id]);
+
+        if (oldProfile) {
+          queryClient.setQueryData(['profile', post.owner.id], (old) => ({
+            ...old,
+            posts: old.posts?.map(p =>
+              p.id === result.postId
+                ? {
+                  ...p,
+                  is_liked_by_user: result.is_liked_by_user,
+                  likes_count: result.likes_count
+                }
+                : p
+            )
+          }));
+        } else {
+          queryClient.invalidateQueries(['profile', post.owner.id]);
+        }
       }
     },
     onError: (err, postId, context) => {
@@ -159,7 +175,7 @@ export const usePosts = () => {
       if (!response.ok) throw new Error('Error creating comment');
       return response.json();
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
       queryClient.invalidateQueries(['posts']);
 
       const posts = queryClient.getQueryData(['posts']);
