@@ -1,5 +1,5 @@
 from sqlalchemy.orm import Session
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Optional
 import schemas
 from core.security import verify_password, get_password_hash
 
@@ -42,19 +42,95 @@ def authenticate_user(db: Session, email: str, password: str):
         return False
     return user
 
-def get_user_posts(db: Session, user_id: int):
+def get_user_posts(db: Session, user_id: int, current_user: Optional[models.User] = None):
     # Get posts created by a specific user
-    return db.query(models.Post).filter(
+    posts = db.query(models.Post).filter(
         models.Post.owner_id == user_id,
         models.Post.parent_id == None
     ).order_by(models.Post.timestamp.desc()).all()
 
-def get_user_replies(db: Session, user_id: int):
-    # Get replies created by a specific user
-    return db.query(models.Post).filter(
+    posts_data = []
+    for post in posts:
+        is_liked = False
+        if current_user:
+            is_liked = db.query(models.Like).filter(
+                models.Like.post_id == post.id,
+                models.Like.user_id == current_user.id
+            ).first() is not None
+        
+        replies = db.query(models.Post).filter(models.Post.parent_id == post.id).all()
+        replies_data = []
+        for reply in replies:
+            reply_is_liked = False
+            if current_user:
+                reply_is_liked = db.query(models.Like).filter(
+                    models.Like.post_id == reply.id,
+                    models.Like.user_id == current_user.id
+                ).first() is not None
+            
+            replies_data.append({
+                "id": reply.id,
+                "text": reply.text,
+                "timestamp": reply.timestamp,
+                "owner": {
+                    "id": reply.owner.id,
+                    "username": reply.owner.username,
+                    "email": reply.owner.email,
+                    "avatar_url": reply.owner.avatar_url
+                },
+                "likes_count": db.query(models.Like).filter(models.Like.post_id == reply.id).count(),
+                "is_liked": reply_is_liked
+            })
+
+
+        posts_data.append({
+            "id": post.id,
+            "text": post.text,
+            "timestamp": post.timestamp,
+            "owner": {
+                "id": post.owner.id,
+                "username": post.owner.username,
+                "email": post.owner.email,
+                "avatar_url": post.owner.avatar_url
+            },
+            "likes_count": db.query(models.Like).filter(models.Like.post_id == post.id).count(),
+            "replies": replies_data,
+            "is_liked_by_user": is_liked,
+        })
+    return posts_data
+
+def get_user_replies(db: Session, user_id: int, current_user: Optional[models.User] = None):
+    """Отримати коментарі користувача з is_liked_by_user"""
+    comments = db.query(models.Post).filter(
         models.Post.owner_id == user_id,
         models.Post.parent_id != None
-    ).order_by(models.Post.timestamp.desc()).all()
+    ).all()
+    
+    comments_data = []
+    for comment in comments:
+        is_liked = False
+        if current_user:
+            is_liked = db.query(models.Like).filter(
+                models.Like.post_id == comment.id,
+                models.Like.user_id == current_user.id
+            ).first() is not None
+        
+        comments_data.append({
+            "id": comment.id,
+            "text": comment.text,
+            "timestamp": comment.timestamp,
+            "owner": {
+                "id": comment.owner.id,
+                "username": comment.owner.username,
+                "email": comment.owner.email,
+                "avatar_url": comment.owner.avatar_url
+            },
+            "parent_id": comment.parent_id,
+            "likes_count": db.query(models.Like).filter(models.Like.post_id == comment.id).count(),
+            "is_liked_by_user": is_liked  
+        })
+    
+    return comments_data
 
 def check_is_username_taken(db: Session, username: str) -> bool:
     # Check if a username is already taken
