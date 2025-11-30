@@ -4,7 +4,7 @@ from sqlalchemy.orm import Session
 from typing import List, Optional
 from crud import user as user_crud
 import models, schemas
-from dependencies import get_current_user, get_db
+from dependencies import get_current_user, get_current_user_optional, get_db
 from services import user_service
 from core.security import create_access_token
     
@@ -23,13 +23,17 @@ def create_user(user: schemas.UserCreate, db: Session = Depends(get_db)):
     return user_service.create_user_with_validation(db, user)
 
 @router.get("/{user_id}", response_model=schemas.UserProfile)
-def get_user_profile(user_id: int, db: Session = Depends(get_db)):
+def get_user_profile(
+    user_id: int,
+    db: Session = Depends(get_db),
+    current_user: Optional[models.User] = Depends(get_current_user_optional)  # ✅ ДОДАТИ
+):
     user = user_crud.get_user(db, user_id=user_id)
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
     
-    posts = user_crud.get_user_posts(db, user_id=user_id)
-    comments = user_crud.get_user_replies(db, user_id=user_id)
+    posts = user_crud.get_user_posts(db, user_id=user_id, current_user=current_user) or []
+    comments = user_crud.get_user_replies(db, user_id=user_id, current_user=current_user) or []
 
     return {
         "id": user.id,
