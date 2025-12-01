@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import toast from "react-hot-toast";
 
 const API_URL = "http://localhost:8000";
 
@@ -37,6 +38,7 @@ export const usePosts = () => {
       return response.json();
     },
     onSuccess: () => {
+      toast.success('Post created!', { icon: '✨' });
       queryClient.invalidateQueries(['posts']);
       const currentUserId = localStorage.getItem("user_id");
       if (currentUserId) {
@@ -56,6 +58,7 @@ export const usePosts = () => {
       return response.json();
     },
     onSuccess: (updatedPost) => {
+      toast.success('Post updated!', { icon: '✏️' });
       queryClient.invalidateQueries(['posts']);
       queryClient.invalidateQueries(['profile', updatedPost.owner.id]);
     }
@@ -75,6 +78,7 @@ export const usePosts = () => {
       return postId;
     },
     onSuccess: (postId) => {
+      toast.success('Post deleted', { icon: '🗑️' });
       queryClient.invalidateQueries(['posts']);
       setShowMenu(prev => ({ ...prev, [postId]: false }));
       const currentUserId = localStorage.getItem("user_id");
@@ -119,6 +123,26 @@ export const usePosts = () => {
       queryClient.setQueryData(['posts'], (old) => {
         if (!Array.isArray(old)) return old;
 
+        if (result.is_liked_by_user) {
+          toast.success('Liked!', {
+            icon: '❤️',
+            style: {
+              background: '#1a1a1a',
+              color: '#fff',
+              border: '1px solid #ef4444',
+            },
+          });
+        } else {
+          toast('Unliked', {
+            icon: '💔',
+            style: {
+              background: '#1a1a1a',
+              color: '#888',
+              border: '1px solid #333',
+            },
+          });
+        }
+
         return old.map(post =>
           post.id === result.postId
             ? {
@@ -156,6 +180,13 @@ export const usePosts = () => {
         queryClient.setQueryData(['posts'], context.previousPosts);
       }
       console.error('Error toggling like:', err);
+      toast.error('Failed to toggle like', {
+        style: {
+          background: '#1a1a1a',
+          color: '#fff',
+          border: '1px solid #ef4444',
+        },
+      });
     },
   });
 
@@ -174,6 +205,7 @@ export const usePosts = () => {
       return response.json();
     },
     onSuccess: (data) => {
+      toast.success('Comment added!', { icon: '💬' });
       queryClient.invalidateQueries(['posts']);
 
       const posts = queryClient.getQueryData(['posts']);
@@ -203,11 +235,21 @@ export const usePosts = () => {
     isLoading,
     showComments,
     showMenu,
-    createPost: (text) => createPostMutation.mutateAsync(text),
+    createPost: async (text) => { 
+       await createPostMutation.mutateAsync(text);
+       return { success: true };
+    },
     updatePost: ({ postId, text }) => updatePostMutation.mutateAsync({ postId, text }),
     deletePost: (postId) => deletePostMutation.mutateAsync(postId),
     toggleLike: (postId) => toggleLikeMutation.mutateAsync(postId),
-    createComment: ({ postId, text }) => createCommentMutation.mutateAsync({ postId, text }),
+    createComment: async ({ postId, text }) => {
+      try {
+        await createCommentMutation.mutateAsync({ postId, text });
+        return { success: true };
+      } catch (error) {
+        return { success: false, error: error.message };
+      }
+    },
     toggleCommentsVisibility,
     toggleMenu
   };
