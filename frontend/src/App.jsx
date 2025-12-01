@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Routes, Route } from "react-router-dom";
 import ProfilePage from "./pages/ProfilePage";
 import './App.css';
+import './toast.css';
 import Header from "./components/Header";
 import PostForm from "./components/PostForm";
 import AuthModal from "./components/AuthModal";
@@ -10,6 +11,7 @@ import { useAuth } from "./hooks/useAuth";
 import { usePosts } from "./hooks/usePosts";
 import EditPostModal from "./components/EditPostModal";
 import HomePage from "./pages/HomePage";
+import { Toaster } from 'react-hot-toast';
 
 function App() {
   const { isAuthenticated, currentUserId, currentUsername, login, register, logout } = useAuth();
@@ -61,9 +63,10 @@ function App() {
     const currentCommentText = commentText[postId];
     if (!currentCommentText?.trim()) return;
 
-    const result = await createComment(postId, currentCommentText);
+    const result = await createComment({ postId, text: currentCommentText });
     if (result.success) {
       setCommentText(prev => ({ ...prev, [postId]: "" }));
+    
     }
   };
 
@@ -135,6 +138,7 @@ function App() {
 
   return (
     <div className="App">
+      <Toaster position="top-center" className="" />
       <Header
         isAuthenticated={isAuthenticated}
         currentUsername={currentUsername}
