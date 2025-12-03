@@ -104,17 +104,38 @@ export const usePosts = () => {
       const previousPosts = queryClient.getQueryData(['posts']);
 
       queryClient.setQueryData(['posts'], (old) =>
-        old?.map(post =>
-          post.id === postId
-            ? {
+        old?.map(post => {
+          if (post.id === postId) {
+            return {
               ...post,
               is_liked_by_user: !post.is_liked_by_user,
               likes_count: post.is_liked_by_user
                 ? post.likes_count - 1
                 : post.likes_count + 1
+            };
+          }
+
+
+          if (post.replies?.length > 0) {
+            const updatedReplies = post.replies.map(reply =>
+              reply.id === postId
+                ? {
+                    ...reply,
+                    is_liked_by_user: !reply.is_liked_by_user,
+                    likes_count: reply.is_liked_by_user
+                      ? reply.likes_count - 1
+                      : reply.likes_count + 1
+                  }
+                : reply
+            );
+
+            if (updatedReplies.some((r, i) => r !== post.replies[i])) {
+              return { ...post, replies: updatedReplies };
             }
-            : post
-        )
+          }
+
+          return post;
+        })
       );
 
       return { previousPosts };
@@ -143,15 +164,33 @@ export const usePosts = () => {
           });
         }
 
-        return old.map(post =>
-          post.id === result.postId
-            ? {
+        return old.map(post => {
+          if (post.id === result.postId) {
+            return {
               ...post,
               is_liked_by_user: result.is_liked_by_user,
               likes_count: result.likes_count
+            };
+          }
+
+          if (post.replies?.length > 0) {
+            const updatedReplies = post.replies.map(reply =>
+              reply.id === result.postId
+                ? {
+                    ...reply,
+                    is_liked_by_user: result.is_liked_by_user,
+                    likes_count: result.likes_count
+                  }
+                : reply
+            );
+
+            if (updatedReplies.some((r, i) => r !== post.replies[i])) {
+              return { ...post, replies: updatedReplies };
             }
-            : post
-        );
+          }
+
+          return post;
+        });
       });
 
       const post = queryClient.getQueryData(['posts'])?.find(p => p.id === result.postId);
@@ -162,15 +201,34 @@ export const usePosts = () => {
 
           return {
             ...old,
-            posts: old.posts.map(p =>
-              p.id === result.postId
-                ? {
+            posts: old.posts.map(p => {
+              if (p.id === result.postId) {
+                return {
                   ...p,
                   is_liked_by_user: result.is_liked_by_user,
                   likes_count: result.likes_count
+                };
+              }
+
+
+              if (p.replies?.length > 0) {
+                const updatedReplies = p.replies.map(reply =>
+                  reply.id === result.postId
+                    ? {
+                        ...reply,
+                        is_liked_by_user: result.is_liked_by_user,
+                        likes_count: result.likes_count
+                      }
+                    : reply
+                );
+
+                if (updatedReplies.some((r, i) => r !== p.replies[i])) {
+                  return { ...p, replies: updatedReplies };
                 }
-                : p
-            )
+              }
+
+              return p;
+            })
           };
         });
       }
@@ -235,9 +293,9 @@ export const usePosts = () => {
     isLoading,
     showComments,
     showMenu,
-    createPost: async (text) => { 
-       await createPostMutation.mutateAsync(text);
-       return { success: true };
+    createPost: async (text) => {
+      await createPostMutation.mutateAsync(text);
+      return { success: true };
     },
     updatePost: ({ postId, text }) => updatePostMutation.mutateAsync({ postId, text }),
     deletePost: (postId) => deletePostMutation.mutateAsync(postId),
