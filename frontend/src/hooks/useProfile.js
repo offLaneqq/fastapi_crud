@@ -45,17 +45,37 @@ export const useProfile = (userId) => {
 
         return {
           ...old,
-          posts: old.posts.map(post =>
-            post.id === postId
-              ? {
+          posts: old.posts.map(post => {
+            if (post.id === postId) {
+              return {
                 ...post,
                 is_liked_by_user: !post.is_liked_by_user,
                 likes_count: post.is_liked_by_user
                   ? post.likes_count - 1
                   : post.likes_count + 1
+              };
+            }
+
+            if (post.replies?.length > 0) {
+              const updatedReplies = post.replies.map(reply =>
+                reply.id === postId
+                  ? {
+                      ...reply,
+                      is_liked_by_user: !reply.is_liked_by_user,
+                      likes_count: reply.is_liked_by_user
+                        ? reply.likes_count - 1
+                        : reply.likes_count + 1
+                    }
+                  : reply
+              );
+
+              if (updatedReplies.some((r, i) => r !== post.replies[i])) {
+                return { ...post, replies: updatedReplies };
               }
-              : post
-          ),
+            }
+
+            return post;
+          }),
         };
       });
 
@@ -67,30 +87,66 @@ export const useProfile = (userId) => {
 
         return {
           ...old,
-          posts: old.posts.map(post =>
-            post.id === result.postId
-              ? {
+          posts: old.posts.map(post => {
+            if (post.id === result.postId) {
+              return {
                 ...post,
                 is_liked_by_user: result.is_liked_by_user,
                 likes_count: result.likes_count
+              };
+            }
+
+            if (post.replies?.length > 0) {
+              const updatedReplies = post.replies.map(reply =>
+                reply.id === result.postId
+                  ? {
+                      ...reply,
+                      is_liked_by_user: result.is_liked_by_user,
+                      likes_count: result.likes_count
+                    }
+                  : reply
+              );
+
+              if (updatedReplies.some((r, i) => r !== post.replies[i])) {
+                return { ...post, replies: updatedReplies };
               }
-              : post
-          ),
+            }
+
+            return post;
+          }),
         };
       });
 
       queryClient.setQueryData(['posts'], (old) => {
         if (!Array.isArray(old)) return old;
 
-        return old.map(post =>
-          post.id === result.postId
-            ? {
+        return old.map(post => {
+          if (post.id === result.postId) {
+            return {
               ...post,
               is_liked_by_user: result.is_liked_by_user,
               likes_count: result.likes_count
+            };
+          }
+
+          if (post.replies?.length > 0) {
+            const updatedReplies = post.replies.map(reply =>
+              reply.id === result.postId
+                ? {
+                    ...reply,
+                    is_liked_by_user: result.is_liked_by_user,
+                    likes_count: result.likes_count
+                  }
+                : reply
+            );
+
+            if (updatedReplies.some((r, i) => r !== post.replies[i])) {
+              return { ...post, replies: updatedReplies };
             }
-            : post
-        );
+          }
+
+          return post;
+        });
       });
     },
     onError: (err, postId, context) => {
