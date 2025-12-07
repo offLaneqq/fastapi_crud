@@ -1,0 +1,378 @@
+.post-detail-page {
+    width: 100%;
+    max-width: 600px;
+    margin: 0 auto;
+    padding: 0;
+    min-height: 100vh;
+    position: relative;
+}
+
+.back-button {
+    position: fixed;
+    top: 120px;
+    left: 20px;
+    background: #1a1a1a;
+    border: 1px solid #2d2d2d;
+    color: #e4e6eb;
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 100;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+.back-button:hover {
+    background: #242424;
+    border-color: #3a3a3a;
+    transform: scale(1.1);
+}
+
+.back-button:active {
+    transform: scale(0.95);
+}
+
+.back-button svg {
+    display: block;
+}
+
+.post-detail-container {
+    background: transparent;
+}
+
+/* Пост у detail view */
+.post-detail-container .message-card {
+    background: #1a1a1a;
+    border-bottom: 1px solid #2d2d2d;
+    border-radius: 0;
+    margin: 0;
+    padding: 1.25rem 1.5rem;
+    cursor: default;
+    list-style: none;
+}
+
+.post-detail-container .message-card:hover {
+    background: #1a1a1a;
+    border-color: #2d2d2d;
+    box-shadow: none;
+}
+
+/* Секція коментарів */
+.comments-section {
+    background: #1a1a1a;
+    padding: 1.5rem;
+    border-top: 1px solid #2d2d2d;
+}
+
+.comments-section h3 {
+    margin: 0 0 1.5rem 0;
+    color: #e4e6eb;
+    font-size: 1rem;
+    font-weight: 600;
+}
+
+/* Коментарі */
+.comments-section .comment {
+    display: flex;
+    gap: 0.75rem;
+    padding: 0.75rem 0;
+    border-bottom: 1px solid #2d2d2d;
+}
+
+.comments-section .comment:last-child {
+    border-bottom: none;
+}
+
+.comments-section .comment-avatar {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    object-fit: cover;
+    flex-shrink: 0;
+}
+
+.comments-section .comment-content {
+    flex: 1;
+}
+
+.comments-section .comment-header {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 0.25rem;
+}
+
+.comments-section .comment-author {
+    color: #e4e6eb;
+    font-size: 0.9rem;
+    font-weight: 600;
+    text-decoration: none;
+    transition: color 0.2s;
+}
+
+.comments-section .comment-author:hover {
+    color: #667eea;
+}
+
+.comments-section .comment-timestamp {
+    font-size: 0.8rem;
+    color: #8e8e8e;
+}
+
+.comments-section .comment-text {
+    color: #e4e6eb;
+    line-height: 1.4;
+    margin: 0.35rem 0 0.5rem 0;
+    word-wrap: break-word;
+}
+
+.comments-section .comment-actions {
+    display: flex;
+    gap: 0.5rem;
+    margin-top: 0.5rem;
+}
+
+/* Форма додавання коментаря */
+.comments-section .add-comment {
+    display: flex;
+    gap: 0.75rem;
+    margin-top: 1.5rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid #2d2d2d;
+}
+
+.comments-section .add-comment input {
+    flex: 1;
+    background-color: #0a0a0a;
+    border: 1px solid #2d2d2d;
+    border-radius: 20px;
+    padding: 0.65rem 1rem;
+    color: #e4e6eb;
+    font-size: 0.9rem;
+    transition: border-color 0.2s;
+}
+
+.comments-section .add-comment input::placeholder {
+    color: #737373;
+}
+
+.comments-section .add-comment input:focus {
+    outline: none;
+    border-color: #0095f6;
+}
+
+.comments-section .add-comment button {
+    padding: 0.65rem 1.25rem;
+    background-color: #0095f6;
+    color: white;
+    border: none;
+    border-radius: 20px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background-color 0.2s;
+    flex-shrink: 0;
+}
+
+.comments-section .add-comment button:hover:not(:disabled) {
+    background-color: #0081d6;
+}
+
+.comments-section .add-comment button:disabled {
+    background-color: #1a4d7a;
+    cursor: not-allowed;
+    opacity: 0.5;
+}
+
+/* Повідомлення про відсутність коментарів */
+.comments-section .no-comments {
+    text-align: center;
+    color: #8e8e8e;
+    padding: 2rem;
+    font-size: 0.9rem;
+}
+
+/* Loading & Error states */
+.loading,
+.error {
+    text-align: center;
+    padding: 3rem 1.5rem;
+    color: #8e8e8e;
+}
+
+.error h2 {
+    color: #e4e6eb;
+    margin-bottom: 1.5rem;
+    font-size: 1.5rem;
+}
+
+.error button {
+    background: #1a1a1a;
+    border: 1px solid #2d2d2d;
+    color: #e4e6eb;
+    padding: 0.75rem 1.5rem;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: 600;
+    transition: all 0.2s;
+}
+
+.error button:hover {
+    background: #242424;
+    border-color: #3a3a3a;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .post-detail-page {
+        padding: 0;
+    }
+
+    .back-button {
+        top: 70px;
+        left: 50%;
+        width: 40px;
+        height: 40px;
+    }
+
+    .back-button svg {
+        width: 20px;
+        height: 20px;
+    }
+
+    .post-detail-container .message-card {
+        padding: 1rem;
+    }
+
+    .comments-section {
+        padding: 1rem;
+    }
+
+    .comments-section h3 {
+        font-size: 0.95rem;
+    }
+
+    .comments-section .add-comment {
+        flex-direction: column;
+    }
+
+    .comments-section .add-comment button {
+        width: 100%;
+    }
+}
+
+/* (768px - 1024px) */
+@media (min-width: 768px) and (max-width: 1024px) {
+    .back-button {
+        top: 100px;
+        left: 20px;
+        width: 48px;
+        height: 48px;
+    }
+
+    .post-detail-container .message-card {
+        padding: 1.5rem 2rem;
+    }
+
+    .comments-section {
+        padding: 2rem;
+    }
+
+    .comments-section h3 {
+        font-size: 1.1rem;
+    }
+}
+
+/* Для великих екранів (1024px+) */
+@media (min-width: 1024px) {
+    .post-detail-page {
+        padding: 20px 0;
+    }
+
+    .back-button {
+        top: 120px;
+        left: calc(50% - 400px);
+        width: 48px;
+        height: 48px;
+    }
+
+    .back-button svg {
+        width: 24px;
+        height: 24px;
+    }
+
+    .post-detail-container {
+        box-shadow: 0 2px 12px rgba(0, 0, 0, 0.15);
+        border-radius: 12px;
+        overflow: hidden;
+    }
+
+    .post-detail-container .message-card {
+        padding: 2rem 2.5rem;
+        border-radius: 12px 12px 0 0;
+    }
+
+    .comments-section {
+        padding: 2rem 2.5rem;
+        border-radius: 0 0 12px 12px;
+    }
+
+    .comments-section h3 {
+        font-size: 1.1rem;
+        margin-bottom: 2rem;
+    }
+
+    .comments-section .comment {
+        padding: 1rem 0;
+    }
+
+    .comments-section .comment-avatar {
+        width: 36px;
+        height: 36px;
+    }
+
+    .comments-section .add-comment {
+        margin-top: 2rem;
+        padding-top: 2rem;
+    }
+
+    .comments-section .add-comment input {
+        font-size: 1rem;
+        padding: 0.75rem 1.25rem;
+    }
+
+    .comments-section .add-comment button {
+        font-size: 1rem;
+        padding: 0.75rem 1.5rem;
+    }
+}
+
+/* Для дуже великих екранів (1440px+) */
+@media (min-width: 1440px) {
+    .post-detail-page {
+        max-width: 700px;
+    }
+
+    .back-button {
+        left: calc(50% - 450px);
+        width: 52px;
+        height: 52px;
+    }
+
+    .back-button svg {
+        width: 26px;
+        height: 26px;
+    }
+
+    .post-detail-container .message-card {
+        padding: 2.5rem 3rem;
+    }
+
+    .comments-section {
+        padding: 2.5rem 3rem;
+    }
+}
