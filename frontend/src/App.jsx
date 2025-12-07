@@ -12,6 +12,7 @@ import { usePosts } from "./hooks/usePosts";
 import EditPostModal from "./components/EditPostModal";
 import HomePage from "./pages/HomePage";
 import { Toaster } from 'react-hot-toast';
+import PostDetailPage from "./pages/PostDetailPage";
 
 function App() {
   const { isAuthenticated, currentUserId, currentUsername, login, register, logout } = useAuth();
@@ -66,7 +67,7 @@ function App() {
     const result = await createComment({ postId, text: currentCommentText });
     if (result.success) {
       setCommentText(prev => ({ ...prev, [postId]: "" }));
-    
+
     }
   };
 
@@ -168,6 +169,20 @@ function App() {
             handleSubmitPost={handleSubmitPost}
           />
         } />
+
+        <Route path="/post/:postId" element={
+          <PostDetailPage
+            isAuthenticated={isAuthenticated}
+            currentUserId={currentUserId}
+            commentText={commentText}
+            setCommentText={setCommentText}
+            handleDeletePost={handleDeletePost}
+            handleEditPost={handleEditPost}
+            handleSubmitComment={handleSubmitComment}
+            handleToggleLike={handleToggleLike}
+          />
+        } />
+
         <Route
           path="/profile/:userId"
           element={
