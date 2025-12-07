@@ -58,7 +58,7 @@ const ProfilePage = ({
         updateData.email = editedEmail;
       }
 
-      if(Object.keys(updateData).length === 0) {
+      if (Object.keys(updateData).length === 0) {
         setIsSaving(false);
         setIsEditing(false);
         return;
@@ -83,7 +83,7 @@ const ProfilePage = ({
         }
 
         setIsEditing(false);
-        
+
         queryClient.setQueryData(['profile', userId], (oldData) => ({
           ...oldData,
           username: updatedUser.username,
@@ -214,8 +214,8 @@ const ProfilePage = ({
                 currentUserId={currentUserId}
                 commentText={commentText}
                 setCommentText={setCommentText}
-                showComments={showComments}
-                showMenu={showMenu}
+                showComments={showComments || {}}
+                showMenu={showMenu || {}}
                 onToggleComments={toggleCommentsVisibility}
                 onToggleMenu={toggleMenu}
                 onDeletePost={handleDeletePost}
