@@ -2,3 +2,4 @@ __pycache__
 sql_app.db
 instructions
 .env
+uploads/
