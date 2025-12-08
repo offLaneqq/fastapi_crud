@@ -1,5 +1,5 @@
 from datetime import timedelta
-from fastapi import APIRouter, Depends, status, HTTPException
+from fastapi import APIRouter, Depends, status, HTTPException, File, UploadFile
 from sqlalchemy.orm import Session
 from typing import List, Optional
 from crud import user as user_crud
@@ -7,7 +7,12 @@ import models, schemas
 from dependencies import get_current_user, get_current_user_optional, get_db
 from services import user_service
 from core.security import create_access_token
-    
+import shutil
+from pathlib import Path
+import uuid
+
+UPLOAD_DIR = Path("uploads/avatars")
+UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
 
 router = APIRouter(prefix="/users", tags=["Users"])
 
@@ -93,3 +98,68 @@ def update_profile_me(
         "access_token": new_token,
         "token_type": "bearer" if new_token else None
     }
+
+@router.post("/me/avatar")
+async def upload_avatar(
+    file: UploadFile = File(...),
+    current_user: models.User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    # Check file type
+    allowed_types = ["image/jpeg", "image/png", "image/gif"]
+    if file.content_type not in allowed_types:
+        raise HTTPException(status_code=400, detail="Invalid file type. Only JPEG, PNG, and GIF are allowed.")
+    
+    # Check file size (limit to 5MB)
+    file.file.seek(0, 2)  # Move to end of file
+    file_size = file.file.tell()
+    file.file.seek(0)  # Reset to start
+    if file_size > 5 * 1024 * 1024:
+        raise HTTPException(status_code=400, detail="File size exceeds 5MB limit.")
+    
+    # Generate unique filename
+    if not file.filename:
+        raise HTTPException(status_code=400, detail="Filename is missing.")
+    file_extention = Path(file.filename).suffix
+    unique_filename = f"{uuid.uuid4()}{file_extention}"
+    file_path = UPLOAD_DIR / unique_filename
+
+    # Delete old avatar if exists
+    avatar_url = getattr(current_user, 'avatar_url', None)
+    if avatar_url:
+        old_file = Path(avatar_url.replace("/uploads/", "uploads/"))
+        if old_file.exists():
+            old_file.unlink()
+
+    # Save new avatar file
+    with file_path.open("wb") as buffer:
+        shutil.copyfileobj(file.file, buffer)
+
+    # Update user's avatar URL in the database
+    avatar_url = f"/uploads/avatars/{unique_filename}"
+    setattr(current_user, 'avatar_url', avatar_url)
+    db.commit()
+    db.refresh(current_user)
+
+    return {"avatar_url": avatar_url, "message": "Avatar uploaded successfully."}
+
+@router.delete("/me/avatar")
+def delete_avatar(
+    current_user: models.User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    avatar_url = getattr(current_user, 'avatar_url', None)
+    if not avatar_url:
+        raise HTTPException(status_code=400, detail="No avatar to delete.")
+    
+    # Delete the avatar file
+    file_path = Path(avatar_url.replace("/uploads/", "uploads/"))
+    if file_path.exists():
+        file_path.unlink()
+    
+    # Remove avatar URL from user profile
+    setattr(current_user, 'avatar_url', None)
+    db.commit()
+    db.refresh(current_user)
+
+    return {"message": "Avatar deleted successfully."}
