@@ -1,12 +1,11 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useParams } from "react-router-dom";
 import PostCard from "../components/PostCard";
 import { formatDate } from "../utils/dateFormatter";
 import { useProfile } from "../hooks/useProfile";
-import { useQueryClient } from "@tanstack/react-query";
 import { getAvatarUrl } from "../utils/avatarColor";
-
-const API_URL = "http://localhost:8000";
+import EditProfileModal from '../components/EditProfileModal';
+import '../styles/ProfilePage.css';
 
 const ProfilePage = ({
   isAuthenticated,
@@ -21,96 +20,14 @@ const ProfilePage = ({
   handleEditPost,
   handleSubmitComment
 }) => {
-  const queryClient = useQueryClient();
   const { userId } = useParams();
-  const [activeTab, setActiveTab] = useState("posts"); // posts | comments
-  const [isEditing, setIsEditing] = useState(false);
-  const [editedUsername, setEditedUsername] = useState("");
-  const [editedEmail, setEditedEmail] = useState("");
-  const [isSaving, setIsSaving] = useState(false);
-  const [formError, setFormError] = useState("");
+  const [activeTab, setActiveTab] = useState("posts");
+  const [showEditModal, setShowEditModal] = useState(false);
 
   const { profile, isLoading, error: profileError, toggleLike } = useProfile(userId);
 
-  useEffect(() => {
-    if (profile) {
-      setEditedUsername(profile.username);
-      setEditedEmail(profile.email);
-    }
-  }, [profile]);
-
   const handleToggleLike = async (postId) => {
     await toggleLike.mutateAsync(postId);
-  };
-
-  const handleSaveProfile = async () => {
-    setIsSaving(true);
-    setFormError("");
-
-    try {
-      const token = localStorage.getItem("token");
-
-      const updateData = {};
-      if (editedUsername !== profile.username) {
-        updateData.username = editedUsername;
-      }
-      if (editedEmail !== profile.email) {
-        updateData.email = editedEmail;
-      }
-
-      if (Object.keys(updateData).length === 0) {
-        setIsSaving(false);
-        setIsEditing(false);
-        return;
-      }
-
-      const response = await fetch(`${API_URL}/users/me`, {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${token}`,
-        },
-        body: JSON.stringify(updateData),
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        const updatedUser = data.user;
-
-        if (data.access_token) {
-          localStorage.setItem("token", data.access_token);
-          queryClient.invalidateQueries(['currentUser']);
-        }
-
-        setIsEditing(false);
-
-        queryClient.setQueryData(['profile', userId], (oldData) => ({
-          ...oldData,
-          username: updatedUser.username,
-          email: updatedUser.email,
-        }));
-        queryClient.setQueryData(['currentUser'], (oldData) => ({
-          ...oldData,
-          username: updatedUser.username,
-          email: updatedUser.email,
-        }));
-        queryClient.invalidateQueries(['posts']);
-      } else {
-        const errorData = await response.json();
-        setFormError(errorData.detail || "Failed to update profile");
-      }
-    } catch (error) {
-      setFormError(error.message);
-    } finally {
-      setIsSaving(false);
-    }
-  };
-
-  const handleCancelEdit = () => {
-    setIsEditing(false);
-    setEditedUsername(profile.username);
-    setEditedEmail(profile.email);
-    setFormError("");
   };
 
   if (isLoading) {
@@ -121,6 +38,8 @@ const ProfilePage = ({
     return <div className="error">User not found</div>;
   }
 
+  const isOwnProfile = isAuthenticated && parseInt(userId) === parseInt(currentUserId);
+
   return (
     <div className="profile-page">
       <div className="profile-header">
@@ -130,63 +49,25 @@ const ProfilePage = ({
           className="profile-avatar"
         />
         <div className="profile-info">
-          {isEditing ? (
-            <input
-              type="text"
-              value={editedUsername}
-              onChange={(e) => setEditedUsername(e.target.value)}
-              className="profile-input"
-              placeholder={profile.username}
-            />
-          ) : (
+          <div className="profile-name-section">
             <h1>{profile.username}</h1>
-          )}
-          {isEditing ? (
-            <input
-              type="email"
-              value={editedEmail}
-              onChange={(e) => setEditedEmail(e.target.value)}
-              className="profile-input"
-              placeholder={profile.email}
-            />
-          ) : (
-            <p className="profile-email">{profile.email}</p>
-          )}
-
-          {formError && <p className="error-message">{formError}</p>}
-
-          {currentUserId === profile.id && (
-            <div className="profile-actions">
-              {isEditing ? (
-                <>
-                  <button
-                    className="save-profile-btn"
-                    onClick={handleSaveProfile}
-                    disabled={isSaving}
-                  >
-                    {isSaving ? "Saving..." : "Save"}
-                  </button>
-                  <button
-                    className="cancel-profile-btn"
-                    onClick={handleCancelEdit}
-                    disabled={isSaving}
-                  >
-                    Cancel
-                  </button>
-                </>
-              ) : (
-                <button
-                  className="edit-profile-btn"
-                  onClick={() => setIsEditing(true)}
-                >
-                  Edit Profile
-                </button>
-              )}
+            {isOwnProfile && (
+              <button
+                className="edit-profile-btn"
+                onClick={() => setShowEditModal(true)}
+              >
+                Edit Profile
+              </button>
+            )}
+          </div>
+          <div className="profile-stats">
+            <div className="stat">
+              <strong>{profile.posts?.length || 0}</strong>
+              <span>posts</span>
             </div>
-          )}
+          </div>
         </div>
       </div>
-
 
       <div className="profile-tabs">
         <button
@@ -247,6 +128,17 @@ const ProfilePage = ({
           </ul>
         )}
       </div>
+
+      {showEditModal && (
+        <EditProfileModal
+          currentUser={{
+            username: profile.username,
+            email: profile.email,
+            avatar_url: profile.avatar_url
+          }}
+          onClose={() => setShowEditModal(false)}
+        />
+      )}
     </div>
   );
 };
