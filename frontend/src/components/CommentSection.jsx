@@ -10,7 +10,6 @@ const CommentSection = ({
 }) => {
     return (
         <div className="comments-section">
-            <h3>Comments</h3>
             {post.replies?.map((reply) => (
                 <div key={reply.id} className="comment">
                     <img
