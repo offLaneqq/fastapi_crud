@@ -44,7 +44,7 @@ const ProfilePage = ({
     <div className="profile-page">
       <div className="profile-header">
         <img
-          src={getAvatarUrl(profile.username, 80)}
+          src={getAvatarUrl(profile.username, 80, profile.avatar_url)}
           alt={profile.username}
           className="profile-avatar"
         />
