@@ -1,5 +1,9 @@
 // Utility functions to generate avatar colors and URLs based on username
+
+const API_URL = "http://localhost:8000";
+
 export const getAvatarColor = (username) => {
+
   if (!username) return '667eea'; // Fallback color
 
   // ✅ Fixed hash function (simpler and more reliable)
@@ -33,7 +37,11 @@ export const getAvatarColor = (username) => {
   return colors[index];
 };
 
-export const getAvatarUrl = (username, size = 40) => {
+export const getAvatarUrl = (username, size = 40, avatarPath = null) => {
+  if (avatarPath) {
+    return `${API_URL}${avatarPath}`;
+  }
+  
   const color = getAvatarColor(username);
   return `https://ui-avatars.com/api/?name=${encodeURIComponent(username)}&background=${color}&color=fff&size=${size}&bold=true`;
 };
