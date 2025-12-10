@@ -51,6 +51,18 @@ def get_user_profile(
         "comments_count": len(comments)
     }
 
+@router.get("/me", response_model=schemas.User)
+def get_current_user_profile(
+    current_user: models.User = Depends(get_current_user)
+):
+    """Get current user's profile"""
+    return {
+        "id": current_user.id,
+        "username": current_user.username,
+        "email": current_user.email,
+        "avatar_url": current_user.avatar_url
+    }
+
 @router.put("/me")
 def update_profile_me(
     user_update: schemas.UserUpdate,  # ✅ JSON body
