@@ -1,4 +1,5 @@
 import { formatDate } from '../utils/dateFormatter';
+import { getAvatarUrl } from '../utils/avatarColor';
 
 const CommentSection = ({
     post,
@@ -13,7 +14,7 @@ const CommentSection = ({
             {post.replies?.map((reply) => (
                 <div key={reply.id} className="comment">
                     <img
-                        src={reply.owner.avatar_url || `https://ui-avatars.com/api/?name=${reply.owner.username}&background=random`}
+                        src={getAvatarUrl(reply.owner.username, 32, reply.owner.avatar_url) || `https://ui-avatars.com/api/?name=${reply.owner.username}&background=random`}
                         alt={`avatar for ${reply.owner.username}`}
                         className="avatar-small"
                     />
