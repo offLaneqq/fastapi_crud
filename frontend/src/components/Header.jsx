@@ -1,7 +1,31 @@
 import { Link } from 'react-router-dom';
-import { getAvatarUrl } from '../utils/avatarColor'; // ✅ ДОДАТИ
+import { getAvatarUrl } from '../utils/avatarColor';
+import { useQuery } from '@tanstack/react-query';
+
+const API_URL = "http://localhost:8000";
 
 const Header = ({ isAuthenticated, currentUsername, currentUserId, onLogout, onLoginClick }) => {
+    
+    const {data: currentUser} = useQuery({
+        queryKey: ['currentUser'],
+        queryFn: async () => {
+            const token = localStorage.getItem("token");
+            if (!token) return null;
+
+            const response = await fetch(`${API_URL}/users/me`, {
+                headers: {
+                    "Authorization": `Bearer ${token}`
+                }
+            });
+
+            if (!response.ok) return null;
+            return response.json();
+        },
+        enabled: isAuthenticated
+    })
+
+    const avatarUrl = getAvatarUrl(currentUsername, 40, currentUser?.avatar_url);
+
     return (
         <header className="app-header">
             <div className='header-left'>
@@ -29,7 +53,7 @@ const Header = ({ isAuthenticated, currentUsername, currentUserId, onLogout, onL
                     <div className="user-section">
                         <Link to={`/profile/${currentUserId}`} className="profile-link">
                             <img
-                                src={getAvatarUrl(currentUsername, 40)} // ✅ ВИКОРИСТАТИ ФУНКЦІЮ
+                                src={avatarUrl}
                                 alt={currentUsername}
                                 className="user-avatar"
                             />
