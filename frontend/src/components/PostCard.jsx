@@ -87,7 +87,7 @@ const PostCard = ({
       <div className="message-header">
         <Link to={`/profile/${post.owner.id}`} className="post-author">
           <img
-            src={getAvatarUrl(post.owner.username, 32)}
+            src={getAvatarUrl(post.owner.username, 32, post.owner.avatar_url)}
             alt={post.owner.username}
             className="comment-avatar"
           />
