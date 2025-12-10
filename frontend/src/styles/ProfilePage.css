@@ -21,3 +21,10 @@
   background: #1a1a1a;
   border-color: #3a3a3a;
 }
+
+.comment-item .comment-avatar {
+    width: 32px !important;
+    height: 32px !important;
+    border-radius: 50%;
+    object-fit: cover;
+}
