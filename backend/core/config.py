@@ -1,8 +1,10 @@
 from pydantic_settings import BaseSettings # type: ignore
+from pydantic import ConfigDict
 from typing import List
 import os
 
 class Settings(BaseSettings):
+    model_config = ConfigDict(env_file=".env") # type: ignore
     # API Settings
     api_title: str = "FastAPI CRUD"
     api_version: str = "1.0.0"
@@ -17,7 +19,5 @@ class Settings(BaseSettings):
     # CORS
     cors_origins: str = os.getenv("CORS_ORIGINS", '["http://localhost:5173","http://localhost:3000"]')
     
-    class Config:
-        env_file = ".env"
 
 settings = Settings()
