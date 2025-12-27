@@ -1,4 +1,4 @@
-from pydantic import BaseModel, EmailStr, Field
+from pydantic import BaseModel, ConfigDict, EmailStr, Field
 from datetime import datetime
 from typing import Optional, List
 
@@ -27,17 +27,15 @@ class UserProfile(UserBase):
     posts_count: int
     comments_count: int
 
-    class Config:
-        from_attributes = True
-
+    model_config = ConfigDict(from_attributes=True)
+    
 class UserResponse(BaseModel):
     id: int
     username: str
     email: EmailStr
     avatar_url: Optional[str] = None
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 class UserUpdate(BaseModel):
     username: Optional[str] = None
@@ -52,8 +50,7 @@ class UserUpdateResponse(BaseModel):
 class User(UserBase):
     id: int
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 # --- Token schemas ---
 
@@ -79,8 +76,7 @@ class PostReply(PostBase):
     likes_count: int = 0  
     is_liked_by_user: bool = False  
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 class Post(PostBase):
     id: int
@@ -90,8 +86,7 @@ class Post(PostBase):
     likes_count: int = 0  # Number of likes for the post
     is_liked_by_user: bool = False  # Whether the current user liked this post
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 # --- Like schemas ---
 
@@ -107,8 +102,7 @@ class Like(LikeBase):
     post_id: int
     timestamp: datetime
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 class LoginForm(BaseModel):
     email: EmailStr
