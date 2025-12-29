@@ -198,6 +198,7 @@ function App() {
               handleDeletePost={handleDeletePost}
               handleEditPost={handleEditPost}
               handleSubmitComment={handleSubmitComment}
+              setShowAuthModal={setShowAuthModal}
             />
           }
         />
