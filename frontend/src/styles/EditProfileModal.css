@@ -57,16 +57,13 @@
     color: #e4e6eb;
 }
 
-.profile-content {
-    padding: 2rem;
-}
-
 .avatar-section {
     display: flex;
     flex-direction: column;
     align-items: center;
     gap: 1.5rem;
     margin-bottom: 2rem;
+    padding: 2rem;
     padding-bottom: 2rem;
     border-bottom: 1px solid #2d2d2d;
 }
@@ -130,6 +127,7 @@
     display: flex;
     flex-direction: column;
     gap: 1.5rem;
+    padding: 0 2rem;
 }
 
 .info-item {
@@ -153,6 +151,26 @@
     background: #0a0a0a;
     border: 1px solid #2d2d2d;
     border-radius: 8px;
+}
+
+.info-input {
+    color: #e4e6eb;
+    font-size: 1rem;
+    padding: 0.75rem 1rem;
+    background: #0a0a0a;
+    border: 1px solid #2d2d2d;
+    border-radius: 8px;
+    width: 100%;
+    transition: border-color 0.2s;
+}
+
+.info-input:focus {
+    outline: none;
+    border-color: #0095f6;
+}
+
+.info-input::placeholder {
+    color: #5e5e5e;
 }
 
 .modal-footer {
