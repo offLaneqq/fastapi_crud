@@ -41,9 +41,9 @@ def test_login_user(client):
     
     response = client.post(
         "/auth/login",
-        files={
-            "username": (None, "loginuser123"),
-            "password": (None, "login12345")
+        json={
+            "email": "login123@test.com",
+            "password": "login12345"
         }
     )
     
@@ -65,9 +65,9 @@ def test_login_wrong_password(client):
     
     response = client.post(
         "/auth/login",
-        files={
-            "username": (None, "wrongpass123"),
-            "password": (None, "wrong123")
+        json={
+            "email": "wrong123@test.com",
+            "password": "wrong123"
         }
     )
-    assert response.status_code == 401
+    assert response.status_code == 400
