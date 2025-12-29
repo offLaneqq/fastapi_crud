@@ -27,9 +27,9 @@ def test_add_comment(client, auth_token):
     post_id = post.json()["id"]
     
     response = client.post(
-        f"/posts/{post_id}/reply",
+        f"/posts/{post_id}/replies",
         json={"text": "Test comment"},
         headers={"Authorization": f"Bearer {token}"}
     )
-    assert response.status_code == 200
+    assert response.status_code == 201
     assert response.json()["text"] == "Test comment"
