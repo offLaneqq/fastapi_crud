@@ -40,6 +40,19 @@ def setup_test_database():
     yield
     test_engine.dispose()
 
+@pytest.fixture(autouse=True)
+def clear_database():
+    """Очищає всі таблиці перед кожним тестом"""
+    # Очищуємо перед тестом
+    db = TestingSessionLocal()
+    try:
+        for table in reversed(Base.metadata.sorted_tables):
+            db.execute(table.delete())
+        db.commit()
+    finally:
+        db.close()
+    yield
+
 @pytest.fixture
 def client():
     """Fixture для TestClient"""
@@ -72,9 +85,9 @@ def auth_token(client):
         # Логін
         login_response = client.post(
             "/auth/login",
-            files={
-                "username": (None, username),
-                "password": (None, password)
+            json={
+                "email": email,
+                "password": password
             }
         )
         return login_response.json()["access_token"]
