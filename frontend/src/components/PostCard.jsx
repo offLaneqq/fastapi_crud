@@ -178,7 +178,10 @@ const PostCard = ({
           className="action-btn"
           onClick={(e) => {
             e.stopPropagation();
-            onToggleComments(post.id);
+            // Only toggle if there are comments to show
+            if (post.replies?.length > 0) {
+              onToggleComments(post.id);
+            }
           }}
         >
           <svg viewBox="0 0 24 24" fill="currentColor">
