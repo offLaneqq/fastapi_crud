@@ -18,7 +18,8 @@ const ProfilePage = ({
   toggleMenu,
   handleDeletePost,
   handleEditPost,
-  handleSubmitComment
+  handleSubmitComment,
+  setShowAuthModal
 }) => {
   const { userId } = useParams();
   const [activeTab, setActiveTab] = useState("posts");
@@ -27,6 +28,10 @@ const ProfilePage = ({
   const { profile, isLoading, error: profileError, toggleLike } = useProfile(userId);
 
   const handleToggleLike = async (postId) => {
+    if (!isAuthenticated) {
+      setShowAuthModal(true);
+      return;
+    }
     await toggleLike.mutateAsync(postId);
   };
 
@@ -49,21 +54,19 @@ const ProfilePage = ({
           className="profile-avatar"
         />
         <div className="profile-info">
-          <div className="profile-name-section">
-            <h1>{profile.username}</h1>
-            {isOwnProfile && (
-              <button
-                className="edit-profile-btn"
-                onClick={() => setShowEditModal(true)}
-              >
-                Edit Profile
-              </button>
-            )}
-          </div>
+          <h1>{profile.username}</h1>
+          {isOwnProfile && (
+            <button
+              className="edit-profile-btn"
+              onClick={() => setShowEditModal(true)}
+            >
+              Edit Profile
+            </button>
+          )}
           <div className="profile-stats">
             <div className="stat">
               <strong>{profile.posts?.length || 0}</strong>
-              <span>posts</span>
+              <span> posts</span>
             </div>
           </div>
         </div>
