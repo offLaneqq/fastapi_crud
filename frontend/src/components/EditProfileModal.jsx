@@ -9,7 +9,13 @@ const API_URL = "http://localhost:8000";
 const EditProfileModal = ({ currentUser, onClose }) => {
   const [preview, setPreview] = useState(null);
   const [selectedFile, setSelectedFile] = useState(null);
+  const [username, setUsername] = useState(currentUser.username);
+  const [email, setEmail] = useState(currentUser.email);
   const queryClient = useQueryClient();
+
+  const hasChanges = selectedFile || 
+    username !== currentUser.username || 
+    email !== currentUser.email;
 
   const uploadMutation = useMutation({
     mutationFn: async (file) => {
@@ -71,6 +77,35 @@ const EditProfileModal = ({ currentUser, onClose }) => {
     }
   });
 
+  const updateProfileMutation = useMutation({
+    mutationFn: async (data) => {
+      const token = localStorage.getItem("token");
+      const response = await fetch(`${API_URL}/users/me`, {
+        method: "PUT",
+        headers: {
+          "Authorization": `Bearer ${token}`,
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify(data)
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.detail || 'Failed to update profile');
+      }
+      return response.json();
+    },
+    onSuccess: () => {
+      toast.success('Profile updated!', { icon: '✨' });
+      queryClient.invalidateQueries(['currentUser']);
+      queryClient.invalidateQueries(['posts']);
+      queryClient.invalidateQueries(['profile']);
+    },
+    onError: (error) => {
+      toast.error(error.message || 'Failed to update profile');
+    }
+  });
+
   const handleFileChange = (e) => {
     const file = e.target.files[0];
     if (!file) return;
@@ -106,6 +141,30 @@ const EditProfileModal = ({ currentUser, onClose }) => {
   const handleDelete = () => {
     if (confirm('Are you sure you want to remove your avatar?')) {
       deleteMutation.mutate();
+    }
+  };
+
+  const handleSave = async () => {
+    // Upload avatar if selected
+    if (selectedFile) {
+      await uploadMutation.mutateAsync(selectedFile);
+    }
+
+    // Update profile if username or email changed
+    if (username !== currentUser.username || email !== currentUser.email) {
+      const updates = {};
+      if (username !== currentUser.username) {
+        updates.username = username;
+      }
+      if (email !== currentUser.email) {
+        updates.email = email;
+      }
+      await updateProfileMutation.mutateAsync(updates);
+    }
+
+    // Close modal if no errors
+    if (!uploadMutation.isError && !updateProfileMutation.isError) {
+      onClose();
     }
   };
 
@@ -160,36 +219,46 @@ const EditProfileModal = ({ currentUser, onClose }) => {
           <div className="profile-info">
             <div className="info-item">
               <label>Username</label>
-              <div className="info-value">{currentUser.username}</div>
+              <input
+                type="text"
+                className="info-input"
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
+                placeholder="Enter username"
+              />
             </div>
 
             <div className="info-item">
               <label>Email</label>
-              <div className="info-value">{currentUser.email}</div>
+              <input
+                type="email"
+                className="info-input"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="Enter email"
+              />
             </div>
           </div>
         </div>
 
-        {selectedFile && (
-          <div className="modal-footer">
-            <button
-              className="cancel-btn"
-              onClick={() => {
-                setSelectedFile(null);
-                setPreview(null);
-              }}
-            >
-              Cancel
-            </button>
+        <div className="modal-footer">
+          <button
+            className="cancel-btn"
+            onClick={onClose}
+            disabled={uploadMutation.isPending || updateProfileMutation.isPending}
+          >
+            {hasChanges ? 'Cancel' : 'Close'}
+          </button>
+          {hasChanges && (
             <button
               className="save-btn"
-              onClick={handleUpload}
-              disabled={uploadMutation.isPending}
+              onClick={handleSave}
+              disabled={uploadMutation.isPending || updateProfileMutation.isPending || !username.trim() || !email.trim()}
             >
-              {uploadMutation.isPending ? 'Uploading...' : 'Save Changes'}
+              {(uploadMutation.isPending || updateProfileMutation.isPending) ? 'Saving...' : 'Accept'}
             </button>
-          </div>
-        )}
+          )}
+        </div>
       </div>
     </div>
   );
