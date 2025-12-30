@@ -33,6 +33,9 @@ except (json.JSONDecodeError, TypeError):
     else:
         cors_origins = [cors_origins_env]
 
+# Strip trailing slashes from all origins (CORS is strict about exact matches)
+cors_origins = [origin.rstrip('/') for origin in cors_origins]
+
 # Always include localhost for development
 if "http://localhost:5173" not in cors_origins:
     cors_origins.extend(["http://localhost:5173", "http://127.0.0.1:5173"])
