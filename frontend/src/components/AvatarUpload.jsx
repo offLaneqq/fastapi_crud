@@ -3,7 +3,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import toast from 'react-hot-toast';
 import '../styles/AvatarUpload.css';
 
-const API_URL = "http://localhost:8000";
+const API_URL = import.meta.env.VITE_API_URL || "http://localhost:8000";
 
 const AvatarUpload = ({ currentUser, onClose }) => {
   const [preview, setPreview] = useState(null);

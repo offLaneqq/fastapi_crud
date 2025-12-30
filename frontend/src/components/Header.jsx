@@ -2,7 +2,7 @@ import { Link } from 'react-router-dom';
 import { getAvatarUrl } from '../utils/avatarColor';
 import { useQuery } from '@tanstack/react-query';
 
-const API_URL = "http://localhost:8000";
+const API_URL = import.meta.env.VITE_API_URL || "http://localhost:8000";
 
 const Header = ({ isAuthenticated, currentUsername, currentUserId, onLogout, onLoginClick }) => {
     

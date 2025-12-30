@@ -5,7 +5,7 @@ import PostCard from '../components/PostCard';
 import CommentSection from '../components/CommentSection';
 import '../styles/PostDetailPage.css';
 
-const API_URL = "http://localhost:8000";
+const API_URL = import.meta.env.VITE_API_URL || "http://localhost:8000";
 
 function PostDetailPage({
     isAuthenticated,

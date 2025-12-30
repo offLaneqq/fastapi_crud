@@ -1,6 +1,6 @@
 // Utility functions to generate avatar colors and URLs based on username
 
-const API_URL = "http://localhost:8000";
+const API_URL = import.meta.env.VITE_API_URL || "http://localhost:8000";
 
 export const getAvatarColor = (username) => {
 
