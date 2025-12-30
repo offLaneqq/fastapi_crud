@@ -1,6 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
+import json
 
 from routers import likes, posts, users
 from core.config import settings
@@ -16,9 +17,16 @@ app = FastAPI(
     version=settings.api_version
 )
 
+# Parse CORS origins from settings (supports JSON string from env var)
+try:
+    cors_origins = json.loads(settings.cors_origins)
+except (json.JSONDecodeError, TypeError):
+    # Fallback to default if parsing fails
+    cors_origins = ["http://localhost:5173", "http://127.0.0.1:5173"]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173", "http://127.0.0.1:5173"],
+    allow_origins=cors_origins,
     allow_credentials=True,
     allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allow_headers=["*"],
