@@ -2,6 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 import json
+import os
 
 from routers import likes, posts, users
 from core.config import settings
@@ -17,12 +18,26 @@ app = FastAPI(
     version=settings.api_version
 )
 
-# Parse CORS origins from settings (supports JSON string from env var)
+# Parse CORS origins - support both JSON array and comma-separated string
+cors_origins_env = os.getenv("CORS_ORIGINS", settings.cors_origins)
+
 try:
-    cors_origins = json.loads(settings.cors_origins)
+    # Try parsing as JSON array first
+    cors_origins = json.loads(cors_origins_env)
+    if not isinstance(cors_origins, list):
+        cors_origins = [cors_origins_env]
 except (json.JSONDecodeError, TypeError):
-    # Fallback to default if parsing fails
-    cors_origins = ["http://localhost:5173", "http://127.0.0.1:5173"]
+    # If not JSON, try comma-separated or single value
+    if "," in cors_origins_env:
+        cors_origins = [origin.strip() for origin in cors_origins_env.split(",")]
+    else:
+        cors_origins = [cors_origins_env]
+
+# Always include localhost for development
+if "http://localhost:5173" not in cors_origins:
+    cors_origins.extend(["http://localhost:5173", "http://127.0.0.1:5173"])
+
+print(f"🌍 CORS allowed origins: {cors_origins}")  # Debug log
 
 app.add_middleware(
     CORSMiddleware,
