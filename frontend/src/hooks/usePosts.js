@@ -32,8 +32,6 @@ export const usePosts = () => {
         formData.append("image", image);
       }
 
-      console.log('Sending post:', { text, hasImage: !!image }); // Debug log
-
       const response = await fetch(`${API_URL}/posts/`, {
         method: "POST",
         headers: {
