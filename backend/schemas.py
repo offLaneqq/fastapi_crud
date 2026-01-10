@@ -67,6 +67,7 @@ class TokenData(BaseModel):
 
 class PostBase(BaseModel):
     text: str
+    image_url: Optional[str] = None
 
 class PostCreate(PostBase):
     pass   # owner_id will be provided separately
@@ -83,6 +84,7 @@ class PostReply(PostBase):
 class Post(PostBase):
     id: int
     timestamp: datetime
+    image_url: Optional[str] = None
     owner: User   # Nested user schema
     replies: List[PostReply] = []  # List of replies to this post
     likes_count: int = 0  # Number of likes for the post
