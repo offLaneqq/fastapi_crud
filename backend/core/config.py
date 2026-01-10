@@ -17,7 +17,7 @@ class Settings(BaseSettings):
     database_url: str = os.getenv("DATABASE_URL", "sqlite:///./sql_app.db")
     
     # CORS
-    cors_origins: str = os.getenv("CORS_ORIGINS", '["http://localhost:5173","http://localhost:3000"]')
+    cors_origins: str = os.getenv("CORS_ORIGINS", '["http://localhost:5173",""https://fastapi-crud-frontend-3m7s.onrender.com""]')
     
 
 settings = Settings()
