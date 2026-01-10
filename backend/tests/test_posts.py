@@ -15,7 +15,7 @@ def test_create_post(client, auth_token):
     
     response = client.post(
         "/posts/",
-        json={"text": "Test post content"},
+        data={"text": "Test post content"},
         headers={"Authorization": f"Bearer {token}"}
     )
     
@@ -29,7 +29,7 @@ def test_update_post(client, auth_token):
     
     post = client.post(
         "/posts/",
-        json={"text": "Original post content"},
+        data={"text": "Original post content"},
         headers={"Authorization": f"Bearer {token}"}
     )
     post_id = post.json()["id"]
@@ -49,7 +49,7 @@ def test_update_other_user_post(client, auth_token):
 
     post = client.post(
         "/posts/",
-        json={"text": "User1's post"},
+        data={"text": "User1's post"},
         headers={"Authorization": f"Bearer {token1}"}
     )
     post_id = post.json()["id"]
@@ -66,7 +66,7 @@ def test_delete_post(client, auth_token):
     
     post = client.post(
         "/posts/",
-        json={"text": "Post to delete"},
+        data={"text": "Post to delete"},
         headers={"Authorization": f"Bearer {token}"}
     )
     post_id = post.json()["id"]
@@ -87,7 +87,7 @@ def test_delete_other_user_post(client, auth_token):
 
     post = client.post(
         "/posts/",
-        json={"text": "User3's post"},
+        data={"text": "User3's post"},
         headers={"Authorization": f"Bearer {token1}"}
     )
     post_id = post.json()["id"]
