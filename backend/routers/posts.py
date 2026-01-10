@@ -1,7 +1,7 @@
 from datetime import datetime
 import os
 import shutil
-from fastapi import APIRouter, Depends, File, HTTPException, UploadFile, status
+from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile, status
 from sqlalchemy.orm import Session
 from typing import List, Optional
 
@@ -44,7 +44,7 @@ def get_post(post_id: int, current_user: Optional[models.User] = Depends(get_cur
 
 # Endpoint to create a new post
 @router.post("/", response_model=schemas.Post, status_code=status.HTTP_201_CREATED)
-def create_post(post: schemas.PostCreate, current_user: schemas.User = Depends(get_current_user), db: Session = Depends(get_db), image: UploadFile = File(None)):
+def create_post(text: str = Form(...), current_user: schemas.User = Depends(get_current_user), db: Session = Depends(get_db), image: UploadFile = File(None)):
     image_url = None
 
     if image and image.filename:
@@ -67,13 +67,13 @@ def create_post(post: schemas.PostCreate, current_user: schemas.User = Depends(g
             raise HTTPException(status_code=500, detail=f"Failed to upload image: {str(e)}")
 
     # Create the post with the image URL if provided
-    post_data = schemas.PostCreate(text=post.text)
+    post_data = schemas.PostCreate(text=text)
 
-    return post_crud.create_post(db, post_data, owner_id=current_user.id, parent_id=None, image_url=image_url)  # type: ignore
+    return post_crud.create_post(db, post_data, owner_id=current_user.id, parent_id=None)  # type: ignore
 
 # Endpoint to create a reply to a post
 @router.post("/{post_id}/replies", response_model=schemas.Post, status_code=status.HTTP_201_CREATED)
-def create_reply(post_id: int, reply: schemas.PostCreate, current_user: models.User = Depends(get_current_user), db: Session = Depends(get_db), image: UploadFile = File(None)):
+def create_reply(post_id: int, text: str = Form(...), current_user: models.User = Depends(get_current_user), db: Session = Depends(get_db), image: UploadFile = File(None)):
     
     # Check if the parent post exists
     parent_post = post_crud.get_post(db, post_id)
@@ -101,8 +101,8 @@ def create_reply(post_id: int, reply: schemas.PostCreate, current_user: models.U
         except Exception as e:
             raise HTTPException(status_code=500, detail=f"Failed to upload image: {str(e)}")
 
-    reply_data = schemas.PostCreate(text=reply.text)
-    return post_crud.create_post(db, reply_data, owner_id=current_user.id, parent_id=post_id, image_url=image_url) # type: ignore
+    reply_data = schemas.PostCreate(text=text)
+    return post_crud.create_post(db, reply_data, owner_id=current_user.id, parent_id=post_id) # type: ignore
 
 
 # Endpoint to update an existing post
