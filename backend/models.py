@@ -22,6 +22,7 @@ class Post(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     text = Column(String, index=True)
+    image_url = Column(String, nullable=True)
     timestamp = Column(DateTime, default=lambda: datetime.now(timezone.utc))
     owner_id = Column(Integer, ForeignKey("users.id"), nullable=False)
     parent_id = Column(Integer, ForeignKey("posts.id"), nullable=True)
