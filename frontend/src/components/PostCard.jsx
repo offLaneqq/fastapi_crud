@@ -32,6 +32,9 @@ const PostCard = ({
       e.target.closest('a') ||
       e.target.closest('.menu') ||
       e.target.closest('.message-menu') ||
+      e.target.closest('.comment-section') || // ✅ Prevent navigation when clicking in comment section
+      e.target.closest('input') || // ✅ Prevent navigation when clicking input
+      e.target.closest('textarea') || // ✅ Prevent navigation when clicking textarea
       isDetailView
     ) {
       return;
@@ -178,10 +181,7 @@ const PostCard = ({
           className="action-btn"
           onClick={(e) => {
             e.stopPropagation();
-            // Only toggle if there are comments to show
-            if (post.replies?.length > 0) {
-              onToggleComments(post.id);
-            }
+            onToggleComments(post.id);
           }}
         >
           <svg viewBox="0 0 24 24" fill="currentColor">

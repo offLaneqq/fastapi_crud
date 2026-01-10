@@ -23,18 +23,41 @@ export const usePosts = () => {
   });
 
   const createPostMutation = useMutation({
-    mutationFn: async (text) => {
+    mutationFn: async ({ text, image }) => {
       const token = localStorage.getItem("token");
+
+      const formData = new FormData();
+      formData.append("text", text);
+      if (image) {
+        formData.append("image", image);
+      }
+
+      console.log('Sending post:', { text, hasImage: !!image }); // Debug log
 
       const response = await fetch(`${API_URL}/posts/`, {
         method: "POST",
         headers: {
-          "Content-Type": "application/json",
           "Authorization": `Bearer ${token}`
         },
-        body: JSON.stringify({ text }),
+        body: formData
       });
-      if (!response.ok) throw new Error('Error creating post');
+      
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        console.error('Backend error:', JSON.stringify(errorData, null, 2)); // Better logging
+        
+        // Extract error message
+        let errorMessage = 'Error creating post';
+        if (errorData.detail) {
+          if (Array.isArray(errorData.detail)) {
+            errorMessage = errorData.detail.map(err => err.msg || err).join(', ');
+          } else {
+            errorMessage = errorData.detail;
+          }
+        }
+        
+        throw new Error(errorMessage);
+      }
       return response.json();
     },
     onSuccess: () => {
@@ -44,6 +67,10 @@ export const usePosts = () => {
       if (currentUserId) {
         queryClient.invalidateQueries(['profile', parseInt(currentUserId)]);
       }
+    },
+    onError: (error) => {
+      console.error('Create post error:', error.message);
+      toast.error(error.message || 'Failed to create post');
     }
   });
 
@@ -249,15 +276,21 @@ export const usePosts = () => {
   });
 
   const createCommentMutation = useMutation({
-    mutationFn: async ({ postId, text }) => {
+    mutationFn: async ({ postId, text, image }) => {
       const token = localStorage.getItem("token");
+
+      const formData = new FormData();
+      formData.append("text", text);
+      if (image) {
+        formData.append("image", image);
+      }
+
       const response = await fetch(`${API_URL}/posts/${postId}/replies`, {
         method: "POST",
         headers: {
-          "Content-Type": "application/json",
           "Authorization": `Bearer ${token}`
         },
-        body: JSON.stringify({ text }),
+        body: formData,
       });
       if (!response.ok) throw new Error('Error creating comment');
       return response.json();
@@ -293,16 +326,16 @@ export const usePosts = () => {
     isLoading,
     showComments,
     showMenu,
-    createPost: async (text) => {
-      await createPostMutation.mutateAsync(text);
+    createPost: async (text, image) => {
+      await createPostMutation.mutateAsync({ text, image });
       return { success: true };
     },
     updatePost: ({ postId, text }) => updatePostMutation.mutateAsync({ postId, text }),
     deletePost: (postId) => deletePostMutation.mutateAsync(postId),
     toggleLike: (postId) => toggleLikeMutation.mutateAsync(postId),
-    createComment: async ({ postId, text }) => {
+    createComment: async ({ postId, text, image }) => {
       try {
-        await createCommentMutation.mutateAsync({ postId, text });
+        await createCommentMutation.mutateAsync({ postId, text, image });
         return { success: true };
       } catch (error) {
         return { success: false, error: error.message };
