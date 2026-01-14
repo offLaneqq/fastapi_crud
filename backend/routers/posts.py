@@ -26,6 +26,7 @@ def get_post(post_id: int, current_user: Optional[models.User] = Depends(get_cur
     return {
         "id": post.id,
         "text": post.text,
+        "image_url": post.image_url,
         "timestamp": post.timestamp,
         "owner": post.owner,
         "replies": [
@@ -48,7 +49,7 @@ def create_post(text: str = Form(...), current_user: schemas.User = Depends(get_
     image_url = None
 
     if image and image.filename:
-        allowed_extensions = {"png", "jpg", "jpeg", "gif"}
+        allowed_extensions = {".png", ".jpg", ".jpeg", ".gif", ".webp"}
         file_extension = os.path.splitext(image.filename)[1].lower()
 
         if file_extension not in allowed_extensions:
@@ -66,16 +67,12 @@ def create_post(text: str = Form(...), current_user: schemas.User = Depends(get_
         except Exception as e:
             raise HTTPException(status_code=500, detail=f"Failed to upload image: {str(e)}")
 
-    # Create the post with the image URL if provided
-    post_data = schemas.PostCreate(text=text)
-
-    return post_crud.create_post(db, post_data, owner_id=current_user.id, parent_id=None)  # type: ignore
+    post_data = schemas.PostCreate(text=text, image_url=image_url)
+    return post_crud.create_post(db, post_data, owner_id=current_user.id, parent_id=None)
 
 # Endpoint to create a reply to a post
 @router.post("/{post_id}/replies", response_model=schemas.Post, status_code=status.HTTP_201_CREATED)
 def create_reply(post_id: int, text: str = Form(...), current_user: models.User = Depends(get_current_user), db: Session = Depends(get_db), image: UploadFile = File(None)):
-    
-    # Check if the parent post exists
     parent_post = post_crud.get_post(db, post_id)
     if parent_post is None:
         raise HTTPException(status_code=404, detail="Parent post not found")
@@ -83,7 +80,7 @@ def create_reply(post_id: int, text: str = Form(...), current_user: models.User 
     image_url = None
 
     if image and image.filename:
-        allowed_extensions = {"png", "jpg", "jpeg", "gif"}
+        allowed_extensions = {".png", ".jpg", ".jpeg", ".gif", ".webp"}
         file_extension = os.path.splitext(image.filename)[1].lower()
 
         if file_extension not in allowed_extensions:
@@ -101,13 +98,12 @@ def create_reply(post_id: int, text: str = Form(...), current_user: models.User 
         except Exception as e:
             raise HTTPException(status_code=500, detail=f"Failed to upload image: {str(e)}")
 
-    reply_data = schemas.PostCreate(text=text)
+    reply_data = schemas.PostCreate(text=text, image_url=image_url)
     return post_crud.create_post(db, reply_data, owner_id=current_user.id, parent_id=post_id) # type: ignore
-
 
 # Endpoint to update an existing post
 @router.put("/{post_id}", response_model=schemas.Post)
-def update_post(post_id: int, new_text: str, db: Session = Depends(get_db), current_user: models.User = Depends(get_current_user)):
+def update_post(post_id: int, text: str = Form(...), db: Session = Depends(get_db), current_user: models.User = Depends(get_current_user)):
     db_post = post_crud.get_post(db, post_id)
     if db_post is None:
         raise HTTPException(status_code=404, detail="Post not found")
@@ -115,7 +111,7 @@ def update_post(post_id: int, new_text: str, db: Session = Depends(get_db), curr
     if getattr(db_post, 'owner_id') != getattr(current_user, 'id'):
         raise HTTPException(status_code=403, detail="Not authorized to update this post")
 
-    return post_crud.update_post(db, post_id, new_text)
+    return post_crud.update_post(db, post_id, text)
 
 
 @router.delete("/{post_id}", status_code=status.HTTP_204_NO_CONTENT)
