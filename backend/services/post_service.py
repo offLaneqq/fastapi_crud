@@ -16,6 +16,7 @@ def get_posts_with_metadata(db: Session, current_user: Optional[models.User], sk
             "text": post.text,
             "timestamp": post.timestamp,
             "owner": post.owner,
+            "image_url": post.image_url,
             "replies": [
                 schemas.PostReply(
                     id=reply.id,
