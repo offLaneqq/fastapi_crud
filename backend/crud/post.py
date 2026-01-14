@@ -27,12 +27,12 @@ def create_post(db: Session, post: schemas.PostCreate, owner_id: int, parent_id:
     db.refresh(db_post)
     return db_post
 
-def update_post(db: Session, post_id: int, new_text: str):
+def update_post(db: Session, post_id: int, text: str):
     # Update the text of an existing post
     db_post = db.query(models.Post).filter(models.Post.id == post_id).first()
     if db_post:
         # here is pylance false positive, because db_post.text is definitely a string
-        db_post.text = new_text  # type: ignore
+        db_post.text = text  # type: ignore FIX THAT!!!
         db.commit()
         db.refresh(db_post)
     return db_post
