@@ -163,6 +163,19 @@ const PostCard = ({
 
       <p className="message-text">{post.text}</p>
 
+      {
+        post.image_url && (
+          <div className='post-image'>
+            <img src={`http://localhost:8000${post.image_url}`}
+              alt="Post visual content"
+              onClick={(e) => {
+                e.stopPropagation();
+              }}
+            />
+          </div>
+        )
+      }
+
       <div className="message-actions">
         <button
           className={`action-btn ${post.is_liked_by_user ? 'liked' : ''}`}
