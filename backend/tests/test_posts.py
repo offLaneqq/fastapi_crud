@@ -35,7 +35,8 @@ def test_update_post(client, auth_token):
     post_id = post.json()["id"]
     
     response = client.put(
-        f"/posts/{post_id}?new_text=Updated post content",
+        f"/posts/{post_id}",
+        data={"text": "Updated post content"},
         headers={"Authorization": f"Bearer {token}"}
     )
     assert response.status_code == 200
@@ -55,7 +56,8 @@ def test_update_other_user_post(client, auth_token):
     post_id = post.json()["id"]
 
     response = client.put(
-        f"/posts/{post_id}?new_text=User2 trying to update",
+        f"/posts/{post_id}",
+        data={"text": "User2 trying to update"},
         headers={"Authorization": f"Bearer {token2}"}
     )
     assert response.status_code == 403
