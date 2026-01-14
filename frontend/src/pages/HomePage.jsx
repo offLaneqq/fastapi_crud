@@ -16,17 +16,14 @@ const HomePage = ({
   handleEditPost,
   handleToggleLike,
   handleSubmitComment,
-  postText,
-  setPostText,
   handleSubmitPost
 }) => {
   return (
     <div className="content-column">
       {isAuthenticated && (
         <PostForm
-          postText={postText}
-          setPostText={setPostText}
-          onSubmit={handleSubmitPost}
+        currentUserId={currentUserId}  
+        onSubmit={handleSubmitPost}
         />
       )}
 

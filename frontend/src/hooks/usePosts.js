@@ -18,7 +18,9 @@ export const usePosts = () => {
 
       const response = await fetch(`${API_URL}/posts/`, { headers });
       if (!response.ok) throw new Error('Network response was not ok');
-      return await response.json();
+      const data = await response.json();
+
+      return data;
     }
   });
 
@@ -28,24 +30,49 @@ export const usePosts = () => {
 
       const formData = new FormData();
       formData.append("text", text);
+
       if (image) {
         formData.append("image", image);
       }
 
       const response = await fetch(`${API_URL}/posts/`, {
         method: "POST",
-        headers: {
-          "Authorization": `Bearer ${token}`
-        },
+        headers: { "Authorization": `Bearer ${token}` },
         body: formData
       });
-      
+
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
-        console.error('Backend error:', JSON.stringify(errorData, null, 2)); // Better logging
-        
-        // Extract error message
-        let errorMessage = 'Error creating post';
+        console.error('Create post error details:', JSON.stringify(errorData, null, 2));
+        throw new Error(errorData.detail || 'Error creating post');
+      }
+      return response.json();
+    },
+    onSuccess: (newPost) => {
+      toast.success('Post created!', { icon: '🎉' });
+      queryClient.invalidateQueries(['posts']);  // ✅ Refetch posts list
+      queryClient.invalidateQueries(['profile', newPost.owner.id]);
+    },
+  });
+
+  const updatePostMutation = useMutation({
+    mutationFn: async ({ postId, text }) => {
+      const token = localStorage.getItem("token");
+
+      const formData = new FormData();
+      formData.append("text", text);
+
+      const response = await fetch(`${API_URL}/posts/${postId}`, {
+        method: "PUT",
+        headers: { "Authorization": `Bearer ${token}` },
+        body: formData
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        console.error('Update error details:', JSON.stringify(errorData, null, 2)); // ✅ See actual error
+
+        let errorMessage = 'Error updating post';
         if (errorData.detail) {
           if (Array.isArray(errorData.detail)) {
             errorMessage = errorData.detail.map(err => err.msg || err).join(', ');
@@ -53,39 +80,19 @@ export const usePosts = () => {
             errorMessage = errorData.detail;
           }
         }
-        
+
         throw new Error(errorMessage);
       }
-      return response.json();
-    },
-    onSuccess: () => {
-      toast.success('Post created!', { icon: '✨' });
-      queryClient.invalidateQueries(['posts']);
-      const currentUserId = localStorage.getItem("user_id");
-      if (currentUserId) {
-        queryClient.invalidateQueries(['profile', parseInt(currentUserId)]);
-      }
-    },
-    onError: (error) => {
-      console.error('Create post error:', error.message);
-      toast.error(error.message || 'Failed to create post');
-    }
-  });
-
-  const updatePostMutation = useMutation({
-    mutationFn: async ({ postId, text }) => {
-      const token = localStorage.getItem("token");
-      const response = await fetch(`${API_URL}/posts/${postId}?new_text=${encodeURIComponent(text)}`, {
-        method: "PUT",
-        headers: { "Authorization": `Bearer ${token}` },
-      });
-      if (!response.ok) throw new Error('Error updating post');
       return response.json();
     },
     onSuccess: (updatedPost) => {
       toast.success('Post updated!', { icon: '✏️' });
       queryClient.invalidateQueries(['posts']);
       queryClient.invalidateQueries(['profile', updatedPost.owner.id]);
+    },
+    onError: (error) => {
+      console.error('Update post mutation error:', error.message);
+      toast.error(error.message || 'Failed to update post');
     }
   });
 
@@ -145,12 +152,12 @@ export const usePosts = () => {
             const updatedReplies = post.replies.map(reply =>
               reply.id === postId
                 ? {
-                    ...reply,
-                    is_liked_by_user: !reply.is_liked_by_user,
-                    likes_count: reply.is_liked_by_user
-                      ? reply.likes_count - 1
-                      : reply.likes_count + 1
-                  }
+                  ...reply,
+                  is_liked_by_user: !reply.is_liked_by_user,
+                  likes_count: reply.is_liked_by_user
+                    ? reply.likes_count - 1
+                    : reply.likes_count + 1
+                }
                 : reply
             );
 
@@ -202,10 +209,10 @@ export const usePosts = () => {
             const updatedReplies = post.replies.map(reply =>
               reply.id === result.postId
                 ? {
-                    ...reply,
-                    is_liked_by_user: result.is_liked_by_user,
-                    likes_count: result.likes_count
-                  }
+                  ...reply,
+                  is_liked_by_user: result.is_liked_by_user,
+                  likes_count: result.likes_count
+                }
                 : reply
             );
 
@@ -240,10 +247,10 @@ export const usePosts = () => {
                 const updatedReplies = p.replies.map(reply =>
                   reply.id === result.postId
                     ? {
-                        ...reply,
-                        is_liked_by_user: result.is_liked_by_user,
-                        likes_count: result.likes_count
-                      }
+                      ...reply,
+                      is_liked_by_user: result.is_liked_by_user,
+                      likes_count: result.likes_count
+                    }
                     : reply
                 );
 
@@ -328,7 +335,15 @@ export const usePosts = () => {
       await createPostMutation.mutateAsync({ text, image });
       return { success: true };
     },
-    updatePost: ({ postId, text }) => updatePostMutation.mutateAsync({ postId, text }),
+    updatePost: async (postId, text) => {
+      try {
+        await updatePostMutation.mutateAsync({ postId, text });
+        return { success: true };
+      } catch (error) {
+        console.error('Update post error:', error);
+        return { success: false, error: error.message };
+      }
+    },
     deletePost: (postId) => deletePostMutation.mutateAsync(postId),
     toggleLike: (postId) => toggleLikeMutation.mutateAsync(postId),
     createComment: async ({ postId, text, image }) => {

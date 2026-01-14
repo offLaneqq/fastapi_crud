@@ -43,11 +43,10 @@ function App() {
   const [commentText, setCommentText] = useState({});
 
   // Handlers
-  const handleSubmitPost = async (e) => {
-    e.preventDefault();
-    if (!postText.trim()) return;
+  const handleSubmitPost = async (text, image) => {
+    if (!text.trim() && !image) return;
 
-    const result = await createPost(postText);
+    const result = await createPost(text, image);
     if (result.success) {
       setPostText("");
     }
