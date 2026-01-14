@@ -280,28 +280,6 @@
   margin-top: 1rem;
 }
 
-.message-form button {
-  padding: 0.65rem 1.5rem;
-  background-color: #0095f6;
-  color: white;
-  border: none;
-  border-radius: 8px;
-  font-size: 0.9rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: background-color 0.2s;
-}
-
-.message-form button:hover:not(:disabled) {
-  background-color: #0081d6;
-}
-
-.message-form button:disabled {
-  background-color: #1a4d7a;
-  cursor: not-allowed;
-  opacity: 0.5;
-}
-
 /* Список повідомлень */
 .message-list {
   list-style: none;

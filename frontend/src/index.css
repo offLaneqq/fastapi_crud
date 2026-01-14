@@ -36,51 +36,6 @@ h1 {
   margin: 0 auto;
 }
 
-/* Форма створення повідомлення */
-.message-form {
-  background-color: #1a1a1a;
-  border: 1px solid #2d2d2d;
-  border-bottom-left-radius: 16px;
-  border-bottom-right-radius: 16px;
-  padding: 1.5rem;
-  margin-bottom: 1rem;
-}
-
-.message-form textarea {
-  width: 100%;
-  min-height: 100px;
-  background-color: #0a0a0a;
-  border: 1px solid #2d2d2d;
-  border-radius: 12px;
-  padding: 1rem;
-  color: #e4e6eb;
-  font-size: 1rem;
-  resize: vertical;
-  font-family: inherit;
-}
-
-.message-form textarea:focus {
-  outline: none;
-  border-color: #4a9eff;
-}
-
-.message-form button {
-  margin-top: 1rem;
-  padding: 0.75rem 2rem;
-  background-color: #4a9eff;
-  color: white;
-  border: none;
-  border-radius: 24px;
-  font-size: 1rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: background-color 0.2s;
-}
-
-.message-form button:hover {
-  background-color: #3a8eef;
-}
-
 /* Список повідомлень */
 .message-list {
   list-style: none;

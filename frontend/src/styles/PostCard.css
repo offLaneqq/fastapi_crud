@@ -12,11 +12,16 @@
     background: #111;
 }
 
-/* Prevent cursor pointer on interactive elements */
+/* ✅ Allow clicks on interactive elements */
 .message-card button,
 .message-card a,
+.message-card input,
+.message-card textarea,
 .message-menu {
-    cursor: default;
+    cursor: auto;
+    /* ✅ Changed from default to auto */
+    pointer-events: auto;
+    /* ✅ Ensure clicks work */
 }
 
 .action-btn,
@@ -30,4 +35,45 @@
     border-radius: 50%;
     object-fit: cover;
     flex-shrink: 0;
+}
+
+.post-image {
+    margin: 0.75rem 0;
+    overflow: hidden;
+    max-height: 250px;
+    cursor: pointer;
+}
+
+.post-image img {
+    width: 50%;
+    height: auto;
+    display: block;
+    object-fit: cover;
+    border-radius: 12px;
+}
+
+.post-image img:hover {
+    opacity: 0.95;
+}
+
+.message-form {
+    background-color: #1a1a1a;
+    border: 1px solid #2d2d2d;
+    border-bottom-left-radius: 16px;
+    border-bottom-right-radius: 16px;
+    padding: 1.5rem;
+    margin-bottom: 1rem;
+}
+
+.message-form textarea {
+    width: 100%;
+    min-height: 100px;
+    background-color: #0a0a0a;
+    border: 1px solid #2d2d2d;
+    border-radius: 12px;
+    padding: 1rem;
+    color: #e4e6eb;
+    font-size: 1rem;
+    resize: vertical;
+    font-family: inherit;
 }

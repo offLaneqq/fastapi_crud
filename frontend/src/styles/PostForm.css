@@ -1,0 +1,209 @@
+.post-form {
+    background: #1a1a1a;
+    border: 1px solid #333;
+    border-radius: 12px;
+    padding: 1rem;
+    margin-bottom: 1.5rem;
+}
+
+.post-form textarea {
+    width: 100%;
+    background: transparent;
+    border: none;
+    color: #fff;
+    font-size: 1rem;
+    resize: none;
+    margin-bottom: 0.75rem;
+    font-family: inherit;
+}
+
+.post-form textarea:focus {
+    outline: none;
+}
+
+.post-form textarea::placeholder {
+    color: #666;
+}
+
+/* ✅ Small preview container */
+.image-preview-container {
+    position: relative;
+    margin-bottom: 0.75rem;
+    border-radius: 12px;
+    overflow: hidden;
+    width: 200px;
+    height: 200px;
+    background: #000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.image-preview-small {
+    max-width: 100%;
+    max-height: 100%;
+    width: auto;
+    height: auto;
+    object-fit: fill;
+    display: block;
+    cursor: pointer;
+    border-radius: 12px;
+}
+
+.image-preview-small:hover {
+    opacity: 0.9;
+    transform: scale(1.02);
+    transition: all 0.2s;
+}
+
+.remove-image-btn {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    background: rgba(0, 0, 0, 0.7);
+    border: none;
+    color: #fff;
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    cursor: pointer;
+    font-size: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.2s;
+    z-index: 10;
+}
+
+.remove-image-btn:hover {
+    background: rgba(239, 68, 68, 0.9);
+}
+
+/* ✅ Fullscreen modal */
+.image-fullscreen-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.95);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 9999;
+    cursor: pointer;
+}
+
+.image-fullscreen-modal img {
+    max-width: 90vw;
+    max-height: 90vh;
+    object-fit: contain;
+    cursor: default;
+}
+
+.close-fullscreen-btn {
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    background: rgba(0, 0, 0, 0.7);
+    border: none;
+    color: #fff;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    cursor: pointer;
+    font-size: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.2s;
+    z-index: 10000;
+}
+
+.close-fullscreen-btn:hover {
+    background: rgba(239, 68, 68, 0.9);
+}
+
+.form-actions {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.image-upload-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    width: 36px;
+    height: 36px;
+    background: transparent;
+    border: none;
+    border-radius: 8px;
+    color: #fff;
+    cursor: pointer;
+    transition: all 0.2s;
+    margin-right: auto;
+    flex-shrink: 0;
+}
+
+.image-upload-btn svg {
+    width: 20px;
+    height: 20px;
+    fill: currentColor;
+}
+
+.image-upload-btn:hover:not(:disabled) {
+    background: rgba(29, 155, 240, 0.1);
+}
+
+.image-upload-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.form-actions button[type="submit"] {
+    padding: 0.75rem 1.75rem;
+    background: #1d9bf0;
+    border: none;
+    border-radius: 20px;
+    color: white;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.2s;
+    flex-shrink: 0;
+}
+
+.form-actions button[type="submit"]:hover:not(:disabled) {
+    background: #1a8cd8;
+}
+
+.form-actions button[type="submit"]:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    background: #666;
+}
+
+
+
+.message-form textarea:focus {
+    outline: none;
+    border-color: #4a9eff;
+}
+
+.submit-button {
+    padding: 0.75rem 2rem;
+    background-color: #4a9eff;
+    color: white;
+    border: none;
+    border-radius: 24px;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.submit-button:hover {
+    background-color: #3a8eef;
+}
