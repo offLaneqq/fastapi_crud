@@ -166,7 +166,8 @@ const PostCard = ({
       {
         post.image_url && (
           <div className='post-image'>
-            <img src={`http://localhost:8000${post.image_url}`}
+            <img
+              src={`${import.meta.env.VITE_API_URL || 'http://localhost:8000'}${post.image_url}`}
               alt="Post visual content"
               onClick={(e) => {
                 e.stopPropagation();
